@@ -173,6 +173,9 @@ export function Footer() {
             <Link href="/contactanos" className="hover:text-zinc-300 transition-colors">
               Libro de Reclamaciones
             </Link>
+            <Link href="/admin" className="hover:text-sumaq-400 font-bold transition-colors">
+              Panel Admin
+            </Link>
           </div>
         </div>
       </div>

@@ -143,6 +143,12 @@ export function Navbar() {
             {/* User Session */}
             {session ? (
               <div className="flex items-center gap-2">
+                <Link
+                  href="/admin"
+                  className="px-2.5 py-1 rounded-lg bg-sumaq-600/20 text-sumaq-400 hover:bg-sumaq-600 hover:text-white text-xs font-bold transition-colors"
+                >
+                  Admin
+                </Link>
                 <span className="hidden xl:inline text-xs text-zinc-300 font-medium truncate max-w-[120px]">
                   {session.user?.name || 'Mi Cuenta'}
                 </span>
