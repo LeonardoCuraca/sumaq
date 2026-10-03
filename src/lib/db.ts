@@ -4,7 +4,12 @@ import { INITIAL_PRODUCTS, Product } from './products-data';
 // Neon Serverless PostgreSQL connection helper
 
 export function getDb() {
-  const databaseUrl = process.env.DATABASE_URL;
+  const databaseUrl =
+    process.env.DATABASE_URL ||
+    process.env.POSTGRES_URL ||
+    process.env.STORAGE_URL ||
+    process.env.NEON_DATABASE_URL;
+
   if (!databaseUrl) {
     return null;
   }

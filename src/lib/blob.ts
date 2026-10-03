@@ -5,13 +5,15 @@ import { put, del, list } from '@vercel/blob';
  * Requires BLOB_READ_WRITE_TOKEN environment variable configured on Vercel.
  */
 export async function uploadImageToBlob(file: File, folder: string = 'products') {
-  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+  const token = process.env.BLOB_READ_WRITE_TOKEN || process.env.STORAGE_READ_WRITE_TOKEN;
+  if (!token) {
     throw new Error('BLOB_READ_WRITE_TOKEN is not configured.');
   }
 
   const filename = `${folder}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
   const blob = await put(filename, file, {
     access: 'public',
+    token: token,
   });
 
   return blob;
