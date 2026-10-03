@@ -1,0 +1,69 @@
+@import "tailwindcss";
+
+@theme {
+  --color-sumaq-50: #fdf2f7;
+  --color-sumaq-100: #fce7f0;
+  --color-sumaq-200: #f9cfe2;
+  --color-sumaq-300: #f5a7cb;
+  --color-sumaq-400: #ee71a6;
+  --color-sumaq-500: #e34384;
+  --color-sumaq-600: #db1166;
+  --color-sumaq-700: #b80c52;
+  --color-sumaq-800: #980d45;
+  --color-sumaq-900: #7f103d;
+  --color-sumaq-950: #48031f;
+  --color-darkgold: #cbb379;
+  --color-charcoal: #111215;
+  --color-surface: #181a1f;
+}
+
+:root {
+  --background: #0b0c0e;
+  --foreground: #f4f4f5;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  overflow-x: hidden;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+::-webkit-scrollbar-track {
+  background: #0e1013;
+}
+::-webkit-scrollbar-thumb {
+  background: #323741;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #db1166;
+}
+
+/* Ticker marquee animation */
+.ticker-track {
+  display: flex;
+  width: calc(300px * 16);
+  animation: tickerScroll 40s linear infinite;
+}
+.ticker-track:hover {
+  animation-play-state: paused;
+}
+@keyframes tickerScroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.glass-header {
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
