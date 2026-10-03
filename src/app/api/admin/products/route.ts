@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { getAllProducts, upsertProduct, deleteProductBySlug } from '@/lib/db';
 import { Product } from '@/lib/products-data';
 
@@ -42,6 +43,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'No se pudo guardar en la base de datos' }, { status: 500 });
     }
 
+    revalidatePath('/');
+    revalidatePath('/linea-hair');
+    revalidatePath('/linea-barber');
+    revalidatePath(`/producto/${product.slug}`);
+
     return NextResponse.json({ success: true, product });
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : 'Error guardando producto';
@@ -61,6 +67,11 @@ export async function DELETE(request: Request) {
     if (!ok) {
       return NextResponse.json({ error: 'No se pudo eliminar el producto' }, { status: 500 });
     }
+
+    revalidatePath('/');
+    revalidatePath('/linea-hair');
+    revalidatePath('/linea-barber');
+    revalidatePath(`/producto/${slug}`);
 
     return NextResponse.json({ success: true, slug });
   } catch (error: unknown) {

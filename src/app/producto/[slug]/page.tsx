@@ -7,6 +7,9 @@ interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
+export const dynamicParams = true;
+export const revalidate = 0;
+
 export async function generateStaticParams() {
   const products = await getAllProducts();
   return products.map((p) => ({

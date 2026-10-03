@@ -2,6 +2,9 @@ import React from 'react';
 import { getAllProducts } from '@/lib/db';
 import { ProductCard } from '@/components/product/ProductCard';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export const metadata = {
   title: 'Línea Hair Lizze Brasil | Planchas de Titanio, Secadores y Fototerapia | SUMAQ',
   description:
