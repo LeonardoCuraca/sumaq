@@ -1,4 +1,4 @@
-import { neon, neonConfig } from '@neondatabase/serverless';
+import { neon } from '@neondatabase/serverless';
 import { INITIAL_PRODUCTS, Product } from './products-data';
 
 // Neon Serverless PostgreSQL connection helper
@@ -79,6 +79,17 @@ export async function initializeNeonDatabase() {
       );
     `;
 
+    await sql`
+      CREATE TABLE IF NOT EXISTS user_logins (
+        id SERIAL PRIMARY KEY,
+        email VARCHAR(255) NOT NULL,
+        role VARCHAR(50) DEFAULT 'salon',
+        ip VARCHAR(100),
+        user_agent TEXT,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+
     // Seed products if table is empty
     const existing = await sql`SELECT count(*) as count FROM products`;
     if (Number(existing[0]?.count || 0) === 0) {
@@ -151,5 +162,173 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
     return rows[0] as unknown as Product;
   } catch {
     return INITIAL_PRODUCTS.find(p => p.slug === slug) || null;
+  }
+}
+
+/**
+ * Upsert (Create or Update) Product in Neon DB
+ */
+export async function upsertProduct(p: Product): Promise<boolean> {
+  const sql = getDb();
+  if (!sql) return false;
+
+  try {
+    await sql`
+      INSERT INTO products (
+        id, slug, category, name, badge, punchline, temp, voltage, options, prices, images, specs, short_desc, long_desc, is_featured
+      ) VALUES (
+        ${p.id}, ${p.slug}, ${p.category}, ${p.name}, ${p.badge || null}, ${p.punchline}, ${p.temp || 'N/A'},
+        ${JSON.stringify(p.voltage || ['220V'])}, ${JSON.stringify(p.options || [])}, ${JSON.stringify(p.prices)},
+        ${JSON.stringify(p.images || [])}, ${JSON.stringify(p.specs || {})}, ${p.shortDesc || ''}, ${p.longDesc || ''}, ${p.isFeatured || false}
+      )
+      ON CONFLICT (slug) DO UPDATE SET
+        category = EXCLUDED.category,
+        name = EXCLUDED.name,
+        badge = EXCLUDED.badge,
+        punchline = EXCLUDED.punchline,
+        temp = EXCLUDED.temp,
+        voltage = EXCLUDED.voltage,
+        options = EXCLUDED.options,
+        prices = EXCLUDED.prices,
+        images = EXCLUDED.images,
+        specs = EXCLUDED.specs,
+        short_desc = EXCLUDED.short_desc,
+        long_desc = EXCLUDED.long_desc,
+        is_featured = EXCLUDED.is_featured;
+    `;
+    return true;
+  } catch (err) {
+    console.error('Error upserting product:', err);
+    return false;
+  }
+}
+
+/**
+ * Delete a product by slug
+ */
+export async function deleteProductBySlug(slug: string): Promise<boolean> {
+  const sql = getDb();
+  if (!sql) return false;
+
+  try {
+    await sql`DELETE FROM products WHERE slug = ${slug}`;
+    return true;
+  } catch (err) {
+    console.error('Error deleting product:', err);
+    return false;
+  }
+}
+
+/**
+ * Record a user login in Neon DB
+ */
+export async function recordUserLogin(email: string, role: string = 'salon') {
+  const sql = getDb();
+  if (!sql) return;
+
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS user_logins (
+        id SERIAL PRIMARY KEY,
+        email VARCHAR(255) NOT NULL,
+        role VARCHAR(50) DEFAULT 'salon',
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+    await sql`
+      INSERT INTO user_logins (email, role)
+      VALUES (${email}, ${role});
+    `;
+  } catch (err) {
+    console.warn('Could not record user login:', err);
+  }
+}
+
+/**
+ * Get all user login history
+ */
+export async function getAllUserLogins() {
+  const sql = getDb();
+  if (!sql) return [];
+
+  try {
+    const rows = await sql`
+      SELECT id, email, role, created_at as "createdAt"
+      FROM user_logins
+      ORDER BY created_at DESC
+      LIMIT 100;
+    `;
+    return rows;
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Order record interface
+ */
+export interface OrderRecord {
+  id: number;
+  customerName: string;
+  customerDoc: string;
+  customerPhone: string;
+  deliveryType: string;
+  city: string;
+  address: string;
+  paymentMethod: string;
+  total: number;
+  items: Array<{ name: string; qty: number; voltage?: string; price: number }>;
+  status: string;
+  createdAt: string;
+}
+
+/**
+ * Get all orders from Neon DB
+ */
+export async function getAllOrders(): Promise<OrderRecord[]> {
+  const sql = getDb();
+  if (!sql) return [];
+
+  try {
+    const rows = await sql`
+      SELECT 
+        id, 
+        customer_name as "customerName", 
+        customer_doc as "customerDoc", 
+        customer_phone as "customerPhone", 
+        delivery_type as "deliveryType", 
+        city, 
+        address, 
+        payment_method as "paymentMethod", 
+        total, 
+        items, 
+        status, 
+        created_at as "createdAt"
+      FROM orders
+      ORDER BY created_at DESC;
+    `;
+    return rows as unknown as OrderRecord[];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Update order status
+ */
+export async function updateOrderStatus(orderId: number, status: string): Promise<boolean> {
+  const sql = getDb();
+  if (!sql) return false;
+
+  try {
+    await sql`
+      UPDATE orders 
+      SET status = ${status}
+      WHERE id = ${orderId};
+    `;
+    return true;
+  } catch (err) {
+    console.error('Error updating order status:', err);
+    return false;
   }
 }

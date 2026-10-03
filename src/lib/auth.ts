@@ -19,11 +19,22 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           (email === 'salon@demo.pe' && password === '123456') ||
           (email && password && password.length >= 6)
         ) {
+          const role = email.includes('admin') ? 'admin' : 'salon_partner';
+          const name = email.includes('admin') ? 'Administrador SUMAQ' : 'Salón Aliado VIP';
+
+          // Track user login in Neon DB
+          try {
+            const { recordUserLogin } = await import('./db');
+            await recordUserLogin(email, role);
+          } catch {
+            // Non-blocking
+          }
+
           return {
             id: '1',
-            name: email.includes('admin') ? 'Administrador SUMAQ' : 'Salón Aliado VIP',
+            name: name,
             email: email,
-            role: email.includes('admin') ? 'admin' : 'salon_partner',
+            role: role,
           };
         }
 
