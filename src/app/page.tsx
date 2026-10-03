@@ -4,6 +4,9 @@ import { ArrowRight, Star, ShieldCheck, Zap, Award, Sparkles } from 'lucide-reac
 import { getAllProducts } from '@/lib/db';
 import { ProductCard } from '@/components/product/ProductCard';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default async function HomePage() {
   const products = await getAllProducts();
   const hairProducts = products.filter((p) => p.category === 'hair').slice(0, 4);
