@@ -4,8 +4,7 @@ import { ArrowRight, Star, ShieldCheck, Zap, Award, Sparkles } from 'lucide-reac
 import { getAllProducts } from '@/lib/db';
 import { ProductCard } from '@/components/product/ProductCard';
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+export const revalidate = 3600;
 
 export default async function HomePage() {
   const products = await getAllProducts();

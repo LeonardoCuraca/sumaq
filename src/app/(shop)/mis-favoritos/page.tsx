@@ -4,12 +4,23 @@ import React from 'react';
 import Link from 'next/link';
 import { Heart, Trash2 } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
-import { INITIAL_PRODUCTS } from '@/lib/products-data';
+import { INITIAL_PRODUCTS, Product } from '@/lib/products-data';
 import { ProductCard } from '@/components/product/ProductCard';
 
 export default function WishlistPage() {
   const { wishlist, toggleWishlist } = useCart();
-  const favItems = INITIAL_PRODUCTS.filter((p) => wishlist.includes(p.slug));
+  const [products, setProducts] = React.useState<Product[]>(INITIAL_PRODUCTS);
+
+  React.useEffect(() => {
+    fetch('/api/products')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) setProducts(data);
+      })
+      .catch(() => {});
+  }, []);
+
+  const favItems = products.filter((p) => wishlist.includes(p.slug));
 
   if (favItems.length === 0) {
     return (

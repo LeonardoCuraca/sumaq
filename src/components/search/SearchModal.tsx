@@ -14,12 +14,23 @@ interface SearchModalProps {
 
 export function SearchModal({ isOpen, onClose }: SearchModalProps) {
   const [query, setQuery] = useState('');
+  const [catalog, setCatalog] = useState<Product[]>(INITIAL_PRODUCTS);
   const { addToCart } = useCart();
+
+  React.useEffect(() => {
+    if (!isOpen) return;
+    fetch('/api/products')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) setCatalog(data);
+      })
+      .catch(() => {});
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
   const filtered = query.trim()
-    ? INITIAL_PRODUCTS.filter(
+    ? catalog.filter(
         (p) =>
           p.name.toLowerCase().includes(query.toLowerCase()) ||
           p.punchline.toLowerCase().includes(query.toLowerCase()) ||
