@@ -1,272 +1,151 @@
 import { neon } from '@neondatabase/serverless';
 import { INITIAL_PRODUCTS, Product } from './products-data';
 
-// Neon Serverless PostgreSQL connection helper
-
+/**
+ * Neon serverless PostgreSQL helper.
+ * El esquema se gestiona con migraciones (`npm run db:migrate`), nunca en runtime.
+ */
 export function getDb() {
-  const databaseUrl =
-    process.env.DATABASE_URL ||
-    process.env.POSTGRES_URL ||
-    process.env.STORAGE_URL ||
-    process.env.NEON_DATABASE_URL;
-
-  if (!databaseUrl) {
-    return null;
-  }
+  const databaseUrl = process.env.DATABASE_URL;
+  if (!databaseUrl) return null;
   return neon(databaseUrl);
 }
 
-/**
- * Initializes the required PostgreSQL schema in Neon DB if not present.
- */
-export async function initializeNeonDatabase() {
+/** Igual que getDb pero falla explícitamente: usar en operaciones que no deben "fingir" éxito. */
+export function requireDb() {
   const sql = getDb();
-  if (!sql) {
-    console.warn("DATABASE_URL not defined. Skipping database initialization.");
-    return false;
-  }
-
-  try {
-    await sql`
-      CREATE TABLE IF NOT EXISTS products (
-        id VARCHAR(100) PRIMARY KEY,
-        slug VARCHAR(150) UNIQUE NOT NULL,
-        category VARCHAR(50) NOT NULL,
-        name VARCHAR(255) NOT NULL,
-        badge VARCHAR(100),
-        punchline TEXT NOT NULL,
-        temp VARCHAR(50) NOT NULL,
-        voltage JSONB NOT NULL,
-        options JSONB,
-        prices JSONB NOT NULL,
-        images JSONB NOT NULL,
-        specs JSONB NOT NULL,
-        short_desc TEXT NOT NULL,
-        long_desc TEXT NOT NULL,
-        is_featured BOOLEAN DEFAULT FALSE,
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-      );
-    `;
-
-    await sql`
-      CREATE TABLE IF NOT EXISTS orders (
-        id SERIAL PRIMARY KEY,
-        customer_name VARCHAR(255) NOT NULL,
-        customer_doc VARCHAR(50) NOT NULL,
-        customer_phone VARCHAR(50) NOT NULL,
-        delivery_type VARCHAR(50) NOT NULL,
-        city VARCHAR(100) NOT NULL,
-        address TEXT,
-        payment_method VARCHAR(50) NOT NULL,
-        total NUMERIC(10, 2) NOT NULL,
-        items JSONB NOT NULL,
-        status VARCHAR(50) DEFAULT 'pendiente_whatsapp',
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-      );
-    `;
-
-    await sql`
-      CREATE TABLE IF NOT EXISTS b2b_leads (
-        id SERIAL PRIMARY KEY,
-        salon_name VARCHAR(255) NOT NULL,
-        doc_number VARCHAR(50) NOT NULL,
-        contact_name VARCHAR(255) NOT NULL,
-        phone VARCHAR(50) NOT NULL,
-        city VARCHAR(100) NOT NULL,
-        interest VARCHAR(100) NOT NULL,
-        notes TEXT,
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-      );
-    `;
-
-    await sql`
-      CREATE TABLE IF NOT EXISTS user_logins (
-        id SERIAL PRIMARY KEY,
-        email VARCHAR(255) NOT NULL,
-        role VARCHAR(50) DEFAULT 'salon',
-        ip VARCHAR(100),
-        user_agent TEXT,
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-      );
-    `;
-
-    // Seed products if table is empty
-    const existing = await sql`SELECT count(*) as count FROM products`;
-    if (Number(existing[0]?.count || 0) === 0) {
-      for (const p of INITIAL_PRODUCTS) {
-        await sql`
-          INSERT INTO products (
-            id, slug, category, name, badge, punchline, temp, voltage, options, prices, images, specs, short_desc, long_desc, is_featured
-          ) VALUES (
-            ${p.id}, ${p.slug}, ${p.category}, ${p.name}, ${p.badge || null}, ${p.punchline}, ${p.temp},
-            ${JSON.stringify(p.voltage)}, ${JSON.stringify(p.options || [])}, ${JSON.stringify(p.prices)},
-            ${JSON.stringify(p.images)}, ${JSON.stringify(p.specs)}, ${p.shortDesc}, ${p.longDesc}, ${p.isFeatured || false}
-          )
-          ON CONFLICT (slug) DO NOTHING;
-        `;
-      }
-    }
-
-    return true;
-  } catch (error) {
-    console.error("Error initializing Neon database:", error);
-    return false;
-  }
+  if (!sql) throw new Error('DATABASE_URL no está configurada.');
+  return sql;
 }
 
+const PRODUCT_COLUMNS = `id, slug, category, name, badge, punchline, temp, voltage, options, prices, images, specs,
+  short_desc AS "shortDesc", long_desc AS "longDesc", is_featured AS "isFeatured"`;
+
 /**
- * Fetch all products from Neon or fallback to static catalog
+ * Catálogo. Solo usa el catálogo estático cuando NO hay base de datos configurada (desarrollo local).
+ * Si hay BD y falla, el error se propaga: nunca mostramos precios potencialmente obsoletos en silencio.
  */
 export async function getAllProducts(): Promise<Product[]> {
   const sql = getDb();
-  if (!sql) {
-    return INITIAL_PRODUCTS;
-  }
+  if (!sql) return INITIAL_PRODUCTS;
 
-  try {
-    const rows = await sql`
-      SELECT id, slug, category, name, badge, punchline, temp, voltage, options, prices, images, specs, short_desc as "shortDesc", long_desc as "longDesc", is_featured as "isFeatured"
-      FROM products
-      ORDER BY id ASC;
-    `;
-
-    if (!rows || rows.length === 0) {
-      return INITIAL_PRODUCTS;
-    }
-
-    return rows as unknown as Product[];
-  } catch {
-    return INITIAL_PRODUCTS;
-  }
+  const rows = await sql.query(`SELECT ${PRODUCT_COLUMNS} FROM products ORDER BY created_at ASC, id ASC`);
+  return rows as unknown as Product[];
 }
 
-/**
- * Fetch product by slug
- */
 export async function getProductBySlug(slug: string): Promise<Product | null> {
   const sql = getDb();
-  if (!sql) {
-    return INITIAL_PRODUCTS.find(p => p.slug === slug) || null;
-  }
+  if (!sql) return INITIAL_PRODUCTS.find((p) => p.slug === slug) || null;
 
-  try {
-    const rows = await sql`
-      SELECT id, slug, category, name, badge, punchline, temp, voltage, options, prices, images, specs, short_desc as "shortDesc", long_desc as "longDesc", is_featured as "isFeatured"
-      FROM products
-      WHERE slug = ${slug}
-      LIMIT 1;
-    `;
-    if (rows.length === 0) {
-      return INITIAL_PRODUCTS.find(p => p.slug === slug) || null;
-    }
-    return rows[0] as unknown as Product;
-  } catch {
-    return INITIAL_PRODUCTS.find(p => p.slug === slug) || null;
-  }
+  const rows = await sql.query(`SELECT ${PRODUCT_COLUMNS} FROM products WHERE slug = $1 LIMIT 1`, [slug]);
+  return (rows[0] as unknown as Product) ?? null;
 }
 
-/**
- * Upsert (Create or Update) Product in Neon DB
- */
-export async function upsertProduct(p: Product): Promise<boolean> {
+/** Productos por id (para recalcular pedidos en servidor). */
+export async function getProductsByIds(ids: string[]): Promise<Product[]> {
+  if (ids.length === 0) return [];
   const sql = getDb();
-  if (!sql) return false;
+  if (!sql) return INITIAL_PRODUCTS.filter((p) => ids.includes(p.id));
 
-  try {
-    await sql`
-      INSERT INTO products (
-        id, slug, category, name, badge, punchline, temp, voltage, options, prices, images, specs, short_desc, long_desc, is_featured
-      ) VALUES (
-        ${p.id}, ${p.slug}, ${p.category}, ${p.name}, ${p.badge || null}, ${p.punchline}, ${p.temp || 'N/A'},
-        ${JSON.stringify(p.voltage || ['220V'])}, ${JSON.stringify(p.options || [])}, ${JSON.stringify(p.prices)},
-        ${JSON.stringify(p.images || [])}, ${JSON.stringify(p.specs || {})}, ${p.shortDesc || ''}, ${p.longDesc || ''}, ${p.isFeatured || false}
-      )
-      ON CONFLICT (slug) DO UPDATE SET
-        category = EXCLUDED.category,
-        name = EXCLUDED.name,
-        badge = EXCLUDED.badge,
-        punchline = EXCLUDED.punchline,
-        temp = EXCLUDED.temp,
-        voltage = EXCLUDED.voltage,
-        options = EXCLUDED.options,
-        prices = EXCLUDED.prices,
-        images = EXCLUDED.images,
-        specs = EXCLUDED.specs,
-        short_desc = EXCLUDED.short_desc,
-        long_desc = EXCLUDED.long_desc,
-        is_featured = EXCLUDED.is_featured;
-    `;
-    return true;
-  } catch (err) {
-    console.error('Error upserting product:', err);
-    return false;
-  }
+  const rows = await sql.query(`SELECT ${PRODUCT_COLUMNS} FROM products WHERE id = ANY($1)`, [ids]);
+  return rows as unknown as Product[];
 }
 
-/**
- * Delete a product by slug
- */
-export async function deleteProductBySlug(slug: string): Promise<boolean> {
-  const sql = getDb();
-  if (!sql) return false;
-
-  try {
-    await sql`DELETE FROM products WHERE slug = ${slug}`;
-    return true;
-  } catch (err) {
-    console.error('Error deleting product:', err);
-    return false;
-  }
+/** Crea un producto nuevo. Devuelve false si el slug o id ya existen. */
+export async function createProduct(p: Product): Promise<boolean> {
+  const sql = requireDb();
+  const rows = await sql`
+    INSERT INTO products (id, slug, category, name, badge, punchline, temp, voltage, options, prices, images, specs, short_desc, long_desc, is_featured)
+    VALUES (${p.id}, ${p.slug}, ${p.category}, ${p.name}, ${p.badge || null}, ${p.punchline}, ${p.temp},
+      ${JSON.stringify(p.voltage)}, ${JSON.stringify(p.options || [])}, ${JSON.stringify(p.prices)},
+      ${JSON.stringify(p.images)}, ${JSON.stringify(p.specs)}, ${p.shortDesc}, ${p.longDesc}, ${p.isFeatured || false})
+    ON CONFLICT DO NOTHING
+    RETURNING id`;
+  return rows.length > 0;
 }
 
-/**
- * Record a user login in Neon DB
- */
-export async function recordUserLogin(email: string, role: string = 'salon') {
+/** Actualiza un producto existente por id. Devuelve false si no existe. */
+export async function updateProduct(p: Product): Promise<boolean> {
+  const sql = requireDb();
+  const rows = await sql`
+    UPDATE products SET
+      slug = ${p.slug}, category = ${p.category}, name = ${p.name}, badge = ${p.badge || null},
+      punchline = ${p.punchline}, temp = ${p.temp}, voltage = ${JSON.stringify(p.voltage)},
+      options = ${JSON.stringify(p.options || [])}, prices = ${JSON.stringify(p.prices)},
+      images = ${JSON.stringify(p.images)}, specs = ${JSON.stringify(p.specs)},
+      short_desc = ${p.shortDesc}, long_desc = ${p.longDesc}, is_featured = ${p.isFeatured || false}
+    WHERE id = ${p.id}
+    RETURNING id`;
+  return rows.length > 0;
+}
+
+/** Elimina un producto por slug y devuelve sus imágenes (para limpiar Blob) o null si no existía. */
+export async function deleteProductBySlug(slug: string): Promise<string[] | null> {
+  const sql = requireDb();
+  const rows = await sql`DELETE FROM products WHERE slug = ${slug} RETURNING images`;
+  if (rows.length === 0) return null;
+  return (rows[0].images as string[]) ?? [];
+}
+
+// ---------------------------------------------------------------------------
+// Usuarios y auditoría de accesos
+// ---------------------------------------------------------------------------
+
+export interface UserRecord {
+  id: number;
+  email: string;
+  name: string;
+  passwordHash: string;
+  role: 'admin' | 'salon_partner';
+  active: boolean;
+}
+
+export async function getUserByEmail(email: string): Promise<UserRecord | null> {
+  const sql = requireDb();
+  const rows = await sql`
+    SELECT id, email, name, password_hash AS "passwordHash", role, active
+    FROM users WHERE email = ${email.trim().toLowerCase()} LIMIT 1`;
+  return (rows[0] as unknown as UserRecord) ?? null;
+}
+
+export async function recordUserLogin(email: string, role: string, ip?: string, userAgent?: string) {
   const sql = getDb();
   if (!sql) return;
-
   try {
-    await sql`
-      CREATE TABLE IF NOT EXISTS user_logins (
-        id SERIAL PRIMARY KEY,
-        email VARCHAR(255) NOT NULL,
-        role VARCHAR(50) DEFAULT 'salon',
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-      );
-    `;
-    await sql`
-      INSERT INTO user_logins (email, role)
-      VALUES (${email}, ${role});
-    `;
+    await sql`INSERT INTO user_logins (email, role, ip, user_agent) VALUES (${email}, ${role}, ${ip ?? null}, ${userAgent ?? null})`;
   } catch (err) {
-    console.warn('Could not record user login:', err);
+    console.warn('No se pudo registrar el acceso:', err);
   }
 }
 
-/**
- * Get all user login history
- */
 export async function getAllUserLogins() {
-  const sql = getDb();
-  if (!sql) return [];
-
-  try {
-    const rows = await sql`
-      SELECT id, email, role, created_at as "createdAt"
-      FROM user_logins
-      ORDER BY created_at DESC
-      LIMIT 100;
-    `;
-    return rows;
-  } catch {
-    return [];
-  }
+  const sql = requireDb();
+  return await sql`
+    SELECT id, email, role, ip, created_at AS "createdAt"
+    FROM user_logins ORDER BY created_at DESC LIMIT 100`;
 }
 
-/**
- * Order record interface
- */
+// ---------------------------------------------------------------------------
+// Pedidos
+// ---------------------------------------------------------------------------
+
+export const ORDER_STATUSES = [
+  'pendiente_whatsapp',
+  'confirmado',
+  'en_despacho',
+  'entregado',
+  'cancelado',
+] as const;
+export type OrderStatus = (typeof ORDER_STATUSES)[number];
+
+export interface OrderItem {
+  id: string;
+  name: string;
+  qty: number;
+  voltage?: string;
+  price: number;
+}
+
 export interface OrderRecord {
   id: number;
   customerName: string;
@@ -277,58 +156,111 @@ export interface OrderRecord {
   address: string;
   paymentMethod: string;
   total: number;
-  items: Array<{ name: string; qty: number; voltage?: string; price: number }>;
+  items: OrderItem[];
   status: string;
   createdAt: string;
 }
 
-/**
- * Get all orders from Neon DB
- */
-export async function getAllOrders(): Promise<OrderRecord[]> {
-  const sql = getDb();
-  if (!sql) return [];
-
-  try {
-    const rows = await sql`
-      SELECT 
-        id, 
-        customer_name as "customerName", 
-        customer_doc as "customerDoc", 
-        customer_phone as "customerPhone", 
-        delivery_type as "deliveryType", 
-        city, 
-        address, 
-        payment_method as "paymentMethod", 
-        total, 
-        items, 
-        status, 
-        created_at as "createdAt"
-      FROM orders
-      ORDER BY created_at DESC;
-    `;
-    return rows as unknown as OrderRecord[];
-  } catch {
-    return [];
-  }
+export interface NewOrder {
+  customerName: string;
+  customerDoc: string;
+  customerPhone: string;
+  deliveryType: string;
+  city: string;
+  address: string;
+  paymentMethod: string;
+  total: number;
+  items: OrderItem[];
+  userId?: number | null;
 }
 
-/**
- * Update order status
- */
-export async function updateOrderStatus(orderId: number, status: string): Promise<boolean> {
-  const sql = getDb();
-  if (!sql) return false;
+export async function createOrder(o: NewOrder): Promise<number> {
+  const sql = requireDb();
+  const rows = await sql`
+    INSERT INTO orders (customer_name, customer_doc, customer_phone, delivery_type, city, address, payment_method, total, items, user_id)
+    VALUES (${o.customerName}, ${o.customerDoc}, ${o.customerPhone}, ${o.deliveryType}, ${o.city}, ${o.address},
+      ${o.paymentMethod}, ${o.total}, ${JSON.stringify(o.items)}, ${o.userId ?? null})
+    RETURNING id`;
+  return rows[0].id as number;
+}
 
-  try {
-    await sql`
-      UPDATE orders 
-      SET status = ${status}
-      WHERE id = ${orderId};
-    `;
-    return true;
-  } catch (err) {
-    console.error('Error updating order status:', err);
-    return false;
-  }
+export async function getAllOrders(): Promise<OrderRecord[]> {
+  const sql = requireDb();
+  const rows = await sql`
+    SELECT id, customer_name AS "customerName", customer_doc AS "customerDoc", customer_phone AS "customerPhone",
+      delivery_type AS "deliveryType", city, address, payment_method AS "paymentMethod",
+      total::float AS total, items, status, created_at AS "createdAt"
+    FROM orders ORDER BY created_at DESC LIMIT 500`;
+  return rows as unknown as OrderRecord[];
+}
+
+export async function updateOrderStatus(orderId: number, status: OrderStatus): Promise<boolean> {
+  const sql = requireDb();
+  const rows = await sql`UPDATE orders SET status = ${status} WHERE id = ${orderId} RETURNING id`;
+  return rows.length > 0;
+}
+
+// ---------------------------------------------------------------------------
+// Leads B2B y mensajes de contacto
+// ---------------------------------------------------------------------------
+
+export interface NewLead {
+  salonName: string;
+  docNumber: string;
+  contactName: string;
+  phone: string;
+  city: string;
+  interest: string;
+  notes?: string;
+}
+
+export async function createLead(l: NewLead) {
+  const sql = requireDb();
+  await sql`
+    INSERT INTO b2b_leads (salon_name, doc_number, contact_name, phone, city, interest, notes)
+    VALUES (${l.salonName}, ${l.docNumber}, ${l.contactName}, ${l.phone}, ${l.city}, ${l.interest}, ${l.notes || null})`;
+}
+
+export interface NewContactMessage {
+  name: string;
+  reason: string;
+  email?: string;
+  phone?: string;
+  message: string;
+}
+
+export async function createContactMessage(m: NewContactMessage) {
+  const sql = requireDb();
+  await sql`
+    INSERT INTO contact_messages (name, reason, email, phone, message)
+    VALUES (${m.name}, ${m.reason}, ${m.email || null}, ${m.phone || null}, ${m.message})`;
+}
+
+export async function getAllLeads() {
+  const sql = requireDb();
+  return await sql`
+    SELECT id, salon_name AS "salonName", doc_number AS "docNumber", contact_name AS "contactName",
+      phone, city, interest, notes, created_at AS "createdAt"
+    FROM b2b_leads ORDER BY created_at DESC LIMIT 200`;
+}
+
+// ---------------------------------------------------------------------------
+// Rate limiting respaldado en BD (funciona entre instancias serverless)
+// ---------------------------------------------------------------------------
+
+/**
+ * Registra un evento y devuelve true si NO se superó el límite.
+ * Si no hay BD, no limita (entorno local).
+ */
+export async function checkRateLimit(key: string, max: number, windowSeconds: number): Promise<boolean> {
+  const sql = getDb();
+  if (!sql) return true;
+  const rows = await sql`
+    SELECT count(*)::int AS count FROM rate_events
+    WHERE key = ${key} AND created_at > now() - (${windowSeconds} || ' seconds')::interval`;
+  if ((rows[0].count as number) >= max) return false;
+  await sql`INSERT INTO rate_events (key) VALUES (${key})`;
+  // Limpieza oportunista de eventos viejos (~1% de las llamadas)
+  if (Math.random() < 0.01) await sql`DELETE FROM rate_events WHERE created_at < now() - interval '1 day'`;
+  return true;
 }

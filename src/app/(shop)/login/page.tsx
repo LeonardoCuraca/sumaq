@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Lock, User, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Lock, User, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 
 export default function LoginPage() {
@@ -97,21 +97,6 @@ export default function LoginPage() {
             {loading ? 'Validando...' : 'Iniciar Sesión'}
           </button>
         </form>
-
-        {/* Demo credentials hint */}
-        <div className="mt-6 pt-6 border-t border-white/5 text-[11px] text-zinc-400 space-y-1 bg-white/[0.02] p-3 rounded-xl">
-          <p className="font-bold text-zinc-300 flex items-center gap-1">
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Cuentas de Acceso Rápido:
-          </p>
-          <p>
-            • <strong>Salón Aliado:</strong> <code className="text-zinc-200">salon@demo.pe</code> / Contraseña:{' '}
-            <code className="text-zinc-200">123456</code>
-          </p>
-          <p>
-            • <strong>Admin SUMAQ:</strong> <code className="text-zinc-200">admin@sumaq.pe</code> / Contraseña:{' '}
-            <code className="text-zinc-200">Lizze2026</code>
-          </p>
-        </div>
 
         <div className="mt-4 text-center">
           <Link href="/trabaja-con-nosotros" className="text-xs text-sumaq-400 hover:underline">
