@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ShoppingBag, MessageCircle, Heart, Check, ChevronRight } from 'lucide-react';
 import { Product } from '@/lib/products-data';
 import { useCart } from '@/context/CartContext';
+import { SITE } from '@/lib/site';
 
 export function ProductDetailClient({ product }: { product: Product }) {
   const [selectedImg, setSelectedImg] = useState(product.images[0]);
@@ -162,7 +163,7 @@ export function ProductDetailClient({ product }: { product: Product }) {
               {inCart > 0 ? `Añadir otra unidad (Tienes ${inCart})` : 'Añadir al Carrito'}
             </button>
             <a
-              href={`https://wa.me/51957709262?text=${whatsappMessage}`}
+              href={`https://wa.me/${SITE.whatsappNumber}?text=${whatsappMessage}`}
               target="_blank"
               rel="noreferrer"
               className="py-3.5 px-6 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm flex items-center justify-center gap-2 transition-all"

@@ -2,9 +2,12 @@
 
 import React, { useState } from 'react';
 import { MapPin, MessageCircle, Mail, Send, CheckCircle } from 'lucide-react';
+import { SITE } from '@/lib/site';
 
 export default function ContactPage() {
   const [sent, setSent] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     reason: 'Consulta de Compra / Precios',
@@ -13,20 +16,31 @@ export default function ContactPage() {
     message: '',
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const msg =
-      `*NUEVA CONSULTA DESDE LA WEB SUMAQ*\n\n` +
-      `*Nombre:* ${formData.name}\n` +
-      `*Motivo:* ${formData.reason}\n` +
-      `*Correo:* ${formData.email}\n` +
-      `*Teléfono:* ${formData.phone}\n` +
-      `*Mensaje:* ${formData.message}\n`;
+    setLoading(true);
+    setError('');
 
-    setSent(true);
-    setTimeout(() => {
-      window.open(`https://wa.me/51957709262?text=${encodeURIComponent(msg)}`, '_blank');
-    }, 800);
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.whatsappUrl) {
+        setError(data.error || 'No pudimos enviar tu mensaje. Inténtalo nuevamente.');
+        return;
+      }
+      setSent(true);
+      setTimeout(() => {
+        window.open(data.whatsappUrl, '_blank');
+      }, 800);
+    } catch {
+      setError('Error de conexión. Inténtalo nuevamente.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -54,7 +68,7 @@ export default function ContactPage() {
               </div>
               <div>
                 <p className="font-bold text-white">Almacén Central & Retiros:</p>
-                <p className="text-zinc-400">Av. 6 de Agosto 589, Jesús María, Lima, Perú</p>
+                <p className="text-zinc-400">{SITE.address}</p>
               </div>
             </div>
 
@@ -64,7 +78,7 @@ export default function ContactPage() {
               </div>
               <div>
                 <p className="font-bold text-white">WhatsApp Asesoría Comercial:</p>
-                <p className="text-zinc-400">+51 957 709 262 / +51 983 459 490</p>
+                <p className="text-zinc-400">+{SITE.whatsappNumber} / {SITE.whatsappSecondary}</p>
               </div>
             </div>
 
@@ -74,7 +88,7 @@ export default function ContactPage() {
               </div>
               <div>
                 <p className="font-bold text-white">Correo Oficial:</p>
-                <p className="text-zinc-400">sumaq.2025import@gmail.com</p>
+                <p className="text-zinc-400">{SITE.email}</p>
               </div>
             </div>
           </div>
@@ -86,6 +100,12 @@ export default function ContactPage() {
             <h2 className="text-xl font-bold text-white mb-6">
               Déjanos tu consulta o propuesta comercial
             </h2>
+
+            {error && (
+              <div role="alert" className="mb-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs">
+                {error}
+              </div>
+            )}
 
             {sent ? (
               <div className="text-center py-8 space-y-3">
@@ -165,9 +185,10 @@ export default function ContactPage() {
 
                 <button
                   type="submit"
-                  className="w-full py-3.5 rounded-xl bg-sumaq-600 hover:bg-sumaq-500 text-white font-bold tracking-wider uppercase flex items-center justify-center gap-2 transition-all cursor-pointer"
+                  disabled={loading}
+                  className="w-full py-3.5 rounded-xl bg-sumaq-600 hover:bg-sumaq-500 text-white font-bold tracking-wider uppercase flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50"
                 >
-                  <Send className="w-4 h-4" /> Enviar Mensaje a SUMAQ en WhatsApp
+                  <Send className="w-4 h-4" /> {loading ? 'Enviando...' : 'Enviar Mensaje a SUMAQ en WhatsApp'}
                 </button>
               </form>
             )}

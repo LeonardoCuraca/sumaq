@@ -1,5 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
+import { whatsappUrl } from '@/lib/site';
 import { ShieldCheck, MapPin, Mail, MessageCircle } from 'lucide-react';
 
 export function Footer() {
@@ -148,7 +149,7 @@ export function Footer() {
                 TikTok
               </a>
               <a
-                href="https://wa.me/51957709262"
+                href={whatsappUrl()}
                 target="_blank"
                 rel="noreferrer"
                 className="p-2 rounded-lg bg-white/5 hover:bg-emerald-600 hover:text-white transition-colors text-xs font-bold"

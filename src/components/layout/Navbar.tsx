@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Search, Heart, ShoppingBag, Menu, X, User, ShieldCheck } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
+import { whatsappUrl } from '@/lib/site';
 import { SearchModal } from '../search/SearchModal';
 import { useSession, signOut } from 'next-auth/react';
 
@@ -45,7 +46,7 @@ export function Navbar() {
             </Link>
             <span className="text-zinc-700">|</span>
             <a
-              href="https://wa.me/51957709262"
+              href={whatsappUrl()}
               target="_blank"
               rel="noreferrer"
               className="hover:text-emerald-400 transition-colors flex items-center gap-1"

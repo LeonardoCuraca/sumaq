@@ -5,6 +5,8 @@ import { Award, ShieldCheck, GraduationCap, CheckCircle } from 'lucide-react';
 
 export default function B2BPage() {
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     salonName: '',
     docNumber: '',
@@ -15,25 +17,31 @@ export default function B2BPage() {
     notes: '',
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
+    setError('');
 
-    const msg =
-      `*SOLICITUD AFILIACIÓN CLUB SALONES SUMAQ*\n\n` +
-      `*Salón / Negocio:* ${formData.salonName}\n` +
-      `*RUC/DNI:* ${formData.docNumber}\n` +
-      `*Contacto:* ${formData.contactName}\n` +
-      `*Teléfono:* ${formData.phone}\n` +
-      `*Ciudad:* ${formData.city}\n` +
-      `*Interés:* ${formData.interest}\n` +
-      `*Notas:* ${formData.notes || 'Ninguna'}\n\n` +
-      `_Hola asesor de SUMAQ, deseo acceder a la lista de precios mayoristas para salones._`;
-
-    setSubmitted(true);
-
-    setTimeout(() => {
-      window.open(`https://wa.me/51957709262?text=${encodeURIComponent(msg)}`, '_blank');
-    }, 800);
+    try {
+      const res = await fetch('/api/leads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.whatsappUrl) {
+        setError(data.error || 'No pudimos registrar tu solicitud. Inténtalo nuevamente.');
+        return;
+      }
+      setSubmitted(true);
+      setTimeout(() => {
+        window.open(data.whatsappUrl, '_blank');
+      }, 800);
+    } catch {
+      setError('Error de conexión. Inténtalo nuevamente.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -95,6 +103,12 @@ export default function B2BPage() {
         <p className="text-xs text-zinc-400 text-center mb-6">
           Completa tus datos y un ejecutivo B2B te enviará la lista de precios mayoristas en minutos por WhatsApp.
         </p>
+
+        {error && (
+          <div role="alert" className="mb-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs">
+            {error}
+          </div>
+        )}
 
         {submitted ? (
           <div className="text-center py-8 space-y-3">
@@ -201,9 +215,10 @@ export default function B2BPage() {
 
             <button
               type="submit"
-              className="w-full py-3.5 rounded-xl bg-sumaq-600 hover:bg-sumaq-500 text-white font-bold text-xs shadow-lg shadow-sumaq-600/30 tracking-wider uppercase transition-all"
+              disabled={loading}
+              className="w-full py-3.5 rounded-xl bg-sumaq-600 hover:bg-sumaq-500 text-white font-bold text-xs shadow-lg shadow-sumaq-600/30 tracking-wider uppercase transition-all disabled:opacity-50"
             >
-              Solicitar Tarifa Mayorista & Asesoría en WhatsApp
+              {loading ? 'Enviando...' : 'Solicitar Tarifa Mayorista & Asesoría en WhatsApp'}
             </button>
           </form>
         )}

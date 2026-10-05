@@ -1,10 +1,18 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ShoppingBag, Truck, MapPin, CheckCircle2, ArrowRight, ArrowLeft, ShieldCheck, Trash2, Plus, Minus } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
+
+interface ServerQuote {
+  items: { id: string; qty: number; price: number }[];
+  subtotal: number;
+  shipping: number;
+  total: number;
+}
 
 export default function CheckoutPage() {
   const { cart, updateQty, removeFromCart, clearCart, subtotal } = useCart();
@@ -12,6 +20,8 @@ export default function CheckoutPage() {
 
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formError, setFormError] = useState('');
+  const [quote, setQuote] = useState<ServerQuote | null>(null);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -26,24 +36,41 @@ export default function CheckoutPage() {
 
   const cartEntries = Object.entries(cart);
 
-  const shippingCost =
-    formData.deliveryType === 'almacen'
-      ? 0
-      : formData.city === 'Lima'
-      ? 0
-      : 19;
+  const itemsPayload = cartEntries.map(([, item]) => ({
+    id: item.product.id,
+    qty: item.qty,
+    voltage: item.voltage,
+  }));
+  const itemsKey = JSON.stringify(itemsPayload);
 
-  const grandTotal = subtotal + shippingCost;
+  // Precios y totales autoritativos desde el servidor (dependen del rol de la sesión).
+  useEffect(() => {
+    if (itemsPayload.length === 0) return;
+    const controller = new AbortController();
+    fetch('/api/quote', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items: itemsPayload, deliveryType: formData.deliveryType, city: formData.city }),
+      signal: controller.signal,
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((q) => setQuote(q))
+      .catch(() => {});
+    return () => controller.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [itemsKey, formData.deliveryType, formData.city]);
+
+  const unitPrice = (id: string, fallback: number) =>
+    quote?.items.find((i) => i.id === id)?.price ?? fallback;
+
+  // Mientras llega la cotización se muestran valores estimados; el servidor siempre recalcula.
+  const shippingCost = quote?.shipping ?? (formData.deliveryType === 'almacen' || formData.city === 'Lima' ? 0 : 19);
+  const shownSubtotal = quote?.subtotal ?? subtotal;
+  const grandTotal = quote?.total ?? subtotal + shippingCost;
 
   const handleCompleteOrder = async () => {
     setIsSubmitting(true);
-
-    const itemsPayload = cartEntries.map(([, item]) => ({
-      name: item.product.name,
-      qty: item.qty,
-      voltage: item.voltage,
-      price: item.product.prices.reg,
-    }));
+    setFormError('');
 
     try {
       const response = await fetch('/api/orders', {
@@ -58,29 +85,31 @@ export default function CheckoutPage() {
           address: formData.address,
           paymentMethod: formData.paymentMethod,
           items: itemsPayload,
-          total: grandTotal,
         }),
       });
 
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
 
-      if (data.whatsappUrl) {
-        // Clear cart upon successful order generation
+      if (response.ok && data.whatsappUrl) {
         clearCart();
-        // Redirect to WhatsApp
-        window.open(data.whatsappUrl, '_blank');
-        router.push('/');
+        // Si el navegador bloquea la ventana emergente, navegamos en la misma pestaña.
+        const popup = window.open(data.whatsappUrl, '_blank');
+        if (popup) {
+          router.push('/');
+        } else {
+          window.location.assign(data.whatsappUrl);
+        }
       } else {
-        alert('Hubo un problema generando el pedido. Intenta nuevamente.');
+        setFormError(data.error || 'Hubo un problema generando el pedido. Intenta nuevamente.');
       }
     } catch (err) {
       console.error(err);
-      alert('Error de conexión. Redirigiendo a WhatsApp directo.');
-      window.open('https://wa.me/51957709262', '_blank');
+      setFormError('Error de conexión. Tu pedido NO fue registrado; inténtalo nuevamente.');
     } finally {
       setIsSubmitting(false);
     }
   };
+
 
   if (cartEntries.length === 0 && step === 1) {
     return (
@@ -171,6 +200,11 @@ export default function CheckoutPage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Main Column */}
         <div className="lg:col-span-8">
+          {formError && (
+            <div role="alert" className="mb-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs">
+              {formError}
+            </div>
+          )}
           {/* STEP 1: CART REVIEW */}
           {step === 1 && (
             <div className="bg-[#131519] border border-white/10 rounded-3xl p-6 space-y-6">
@@ -183,16 +217,17 @@ export default function CheckoutPage() {
                 {cartEntries.map(([slug, item]) => (
                   <div key={slug} className="pt-4 flex items-center justify-between gap-4">
                     <div className="flex items-center gap-4 min-w-0">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
+                      <Image
                         src={item.product.images[0]}
                         alt={item.product.name}
+                        width={64}
+                        height={64}
                         className="w-16 h-16 rounded-xl object-cover bg-black border border-white/10 shrink-0"
                       />
                       <div className="min-w-0">
                         <h3 className="text-sm font-bold text-white truncate">{item.product.name}</h3>
                         <p className="text-xs text-sumaq-400 font-semibold">
-                          S/ {item.product.prices.reg} c/u
+                          S/ {unitPrice(item.product.id, item.product.prices.reg)} c/u
                         </p>
                         <span className="text-[10px] text-zinc-500">{item.voltage}</span>
                       </div>
@@ -217,7 +252,7 @@ export default function CheckoutPage() {
                       </div>
 
                       <span className="text-sm font-black text-white w-20 text-right">
-                        S/ {item.product.prices.reg * item.qty}
+                        S/ {unitPrice(item.product.id, item.product.prices.reg) * item.qty}
                       </span>
 
                       <button
@@ -377,10 +412,19 @@ export default function CheckoutPage() {
                 <button
                   type="button"
                   onClick={() => {
-                    if (!formData.fullName || !formData.phone) {
-                      alert('Por favor completa al menos tu nombre y WhatsApp de contacto.');
+                    if (!formData.fullName.trim() || !/^\+?[\d\s-]{7,20}$/.test(formData.phone.trim())) {
+                      setFormError('Completa tu nombre y un teléfono/WhatsApp válido.');
                       return;
                     }
+                    if (!/^(\d{8}|\d{11})$/.test(formData.dniRuc.trim())) {
+                      setFormError('Ingresa un DNI (8 dígitos) o RUC (11 dígitos) válido.');
+                      return;
+                    }
+                    if (formData.deliveryType === 'domicilio' && formData.address.trim().length < 5) {
+                      setFormError('Ingresa la dirección de entrega.');
+                      return;
+                    }
+                    setFormError('');
                     setStep(3);
                   }}
                   className="px-6 py-3 rounded-xl bg-sumaq-600 hover:bg-sumaq-500 text-white text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all"
@@ -488,7 +532,7 @@ export default function CheckoutPage() {
             <div className="space-y-2 text-xs">
               <div className="flex justify-between text-zinc-400">
                 <span>Subtotal Herramientas:</span>
-                <span className="text-white font-medium">S/ {subtotal}</span>
+                <span className="text-white font-medium">S/ {shownSubtotal}</span>
               </div>
               <div className="flex justify-between text-zinc-400">
                 <span>Costo de Despacho:</span>
