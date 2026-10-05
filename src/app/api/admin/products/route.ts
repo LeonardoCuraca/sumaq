@@ -1,81 +1,100 @@
 import { NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
-import { getAllProducts, upsertProduct, deleteProductBySlug } from '@/lib/db';
-import { Product } from '@/lib/products-data';
+import { createProduct, deleteProductBySlug, getAllProducts, updateProduct } from '@/lib/db';
+import { requireAdmin } from '@/lib/guards';
+import { badRequest, readJson, serverError } from '@/lib/api';
+import { formatZodError, productInputSchema, slugify } from '@/lib/validation';
+import { deleteBlobImages } from '@/lib/blob';
+import type { Product } from '@/lib/products-data';
+
+function revalidateCatalog(slug?: string) {
+  revalidatePath('/');
+  revalidatePath('/linea-hair');
+  revalidatePath('/linea-barber');
+  if (slug) revalidatePath(`/producto/${slug}`);
+}
 
 export async function GET() {
+  const denied = await requireAdmin();
+  if (denied) return denied;
   try {
-    const products = await getAllProducts();
-    return NextResponse.json(products);
-  } catch (error: unknown) {
-    const msg = error instanceof Error ? error.message : 'Error cargando productos';
-    return NextResponse.json({ error: msg }, { status: 500 });
+    return NextResponse.json(await getAllProducts());
+  } catch (error) {
+    return serverError('admin/products GET', error);
   }
 }
 
+/** Crea (sin id existente) o actualiza (con id existente) un producto. */
 export async function POST(request: Request) {
-  try {
-    const body = await request.json();
-    const product: Product = {
-      id: body.id || `prod-${Date.now()}`,
-      slug: body.slug || body.name.toLowerCase().replace(/[^a-z0-9]+/g, '_'),
-      category: body.category || 'hair',
-      name: body.name,
-      badge: body.badge || '',
-      punchline: body.punchline || '',
-      temp: body.temp || 'N/A',
-      voltage: Array.isArray(body.voltage) ? body.voltage : ['220V'],
-      options: Array.isArray(body.options) ? body.options : [],
-      prices: {
-        reg: Number(body.prices?.reg || 0),
-        min: Number(body.prices?.min || 0),
-        salonPack: Number(body.prices?.salonPack || 0),
-      },
-      images: Array.isArray(body.images) ? body.images : [body.imageUrl || ''],
-      specs: body.specs || {},
-      shortDesc: body.shortDesc || '',
-      longDesc: body.longDesc || '',
-      isFeatured: Boolean(body.isFeatured),
-    };
+  const denied = await requireAdmin();
+  if (denied) return denied;
 
-    const ok = await upsertProduct(product);
-    if (!ok) {
-      return NextResponse.json({ error: 'No se pudo guardar en la base de datos' }, { status: 500 });
+  try {
+    let body: unknown;
+    try {
+      body = await readJson(request);
+    } catch {
+      return badRequest('JSON inválido o demasiado grande');
     }
 
-    revalidatePath('/');
-    revalidatePath('/linea-hair');
-    revalidatePath('/linea-barber');
-    revalidatePath(`/producto/${product.slug}`);
+    const parsed = productInputSchema.safeParse(body);
+    if (!parsed.success) return badRequest(formatZodError(parsed.error));
+    const input = parsed.data;
 
+    const slug = slugify(input.slug || input.name);
+    if (!slug) return badRequest('No se pudo generar un slug válido.');
+
+    const product: Product = {
+      id: input.id || `prod-${crypto.randomUUID().slice(0, 8)}`,
+      slug,
+      category: input.category,
+      name: input.name,
+      badge: input.badge,
+      punchline: input.punchline,
+      temp: input.temp,
+      voltage: input.voltage,
+      options: input.options,
+      prices: input.prices,
+      images: input.images,
+      specs: input.specs,
+      shortDesc: input.shortDesc,
+      longDesc: input.longDesc,
+      isFeatured: input.isFeatured,
+    };
+
+    try {
+      const updated = input.id ? await updateProduct(product) : false;
+      const ok = updated || (await createProduct(product));
+      if (!ok) return NextResponse.json({ error: 'Ya existe un producto con ese slug o id.' }, { status: 409 });
+    } catch (err) {
+      if ((err as { code?: string }).code === '23505') {
+        return NextResponse.json({ error: 'Ya existe un producto con ese slug.' }, { status: 409 });
+      }
+      throw err;
+    }
+
+    revalidateCatalog(product.slug);
     return NextResponse.json({ success: true, product });
-  } catch (error: unknown) {
-    const msg = error instanceof Error ? error.message : 'Error guardando producto';
-    return NextResponse.json({ error: msg }, { status: 500 });
+  } catch (error) {
+    return serverError('admin/products POST', error);
   }
 }
 
 export async function DELETE(request: Request) {
+  const denied = await requireAdmin();
+  if (denied) return denied;
+
   try {
-    const { searchParams } = new URL(request.url);
-    const slug = searchParams.get('slug');
-    if (!slug) {
-      return NextResponse.json({ error: 'Slug no proporcionado' }, { status: 400 });
-    }
+    const slug = new URL(request.url).searchParams.get('slug');
+    if (!slug) return badRequest('Slug no proporcionado');
 
-    const ok = await deleteProductBySlug(slug);
-    if (!ok) {
-      return NextResponse.json({ error: 'No se pudo eliminar el producto' }, { status: 500 });
-    }
+    const images = await deleteProductBySlug(slug);
+    if (images === null) return NextResponse.json({ error: 'Producto no encontrado' }, { status: 404 });
 
-    revalidatePath('/');
-    revalidatePath('/linea-hair');
-    revalidatePath('/linea-barber');
-    revalidatePath(`/producto/${slug}`);
-
+    await deleteBlobImages(images);
+    revalidateCatalog(slug);
     return NextResponse.json({ success: true, slug });
-  } catch (error: unknown) {
-    const msg = error instanceof Error ? error.message : 'Error eliminando producto';
-    return NextResponse.json({ error: msg }, { status: 500 });
+  } catch (error) {
+    return serverError('admin/products DELETE', error);
   }
 }
