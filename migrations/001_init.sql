@@ -1,0 +1,54 @@
+CREATE TABLE IF NOT EXISTS products (
+  id VARCHAR(100) PRIMARY KEY,
+  slug VARCHAR(150) UNIQUE NOT NULL,
+  category VARCHAR(50) NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  badge VARCHAR(100),
+  punchline TEXT NOT NULL,
+  temp VARCHAR(50) NOT NULL,
+  voltage JSONB NOT NULL,
+  options JSONB,
+  prices JSONB NOT NULL,
+  images JSONB NOT NULL,
+  specs JSONB NOT NULL,
+  short_desc TEXT NOT NULL,
+  long_desc TEXT NOT NULL,
+  is_featured BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS orders (
+  id SERIAL PRIMARY KEY,
+  customer_name VARCHAR(255) NOT NULL,
+  customer_doc VARCHAR(50) NOT NULL,
+  customer_phone VARCHAR(50) NOT NULL,
+  delivery_type VARCHAR(50) NOT NULL,
+  city VARCHAR(100) NOT NULL,
+  address TEXT,
+  payment_method VARCHAR(50) NOT NULL,
+  total NUMERIC(10, 2) NOT NULL,
+  items JSONB NOT NULL,
+  status VARCHAR(50) DEFAULT 'pendiente_whatsapp',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS b2b_leads (
+  id SERIAL PRIMARY KEY,
+  salon_name VARCHAR(255) NOT NULL,
+  doc_number VARCHAR(50) NOT NULL,
+  contact_name VARCHAR(255) NOT NULL,
+  phone VARCHAR(50) NOT NULL,
+  city VARCHAR(100) NOT NULL,
+  interest VARCHAR(100) NOT NULL,
+  notes TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS user_logins (
+  id SERIAL PRIMARY KEY,
+  email VARCHAR(255) NOT NULL,
+  role VARCHAR(50) DEFAULT 'salon',
+  ip VARCHAR(100),
+  user_agent TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
