@@ -24,6 +24,7 @@ import {
   DollarSign,
   Lock,
   ChevronRight,
+  ChevronLeft,
   Sliders,
   Check,
   Eye,
@@ -35,6 +36,123 @@ import {
 import { Product } from '@/lib/products-data';
 import { OrderRecord } from '@/lib/db';
 import { useSession, signIn, signOut } from 'next-auth/react';
+
+interface PaginationProps {
+  currentPage: number;
+  totalPages: number;
+  totalItems: number;
+  itemsPerPage: number;
+  onPageChange: (page: number) => void;
+  onItemsPerPageChange: (items: number) => void;
+  pageSizeOptions?: number[];
+}
+
+function TablePagination({
+  currentPage,
+  totalPages,
+  totalItems,
+  itemsPerPage,
+  onPageChange,
+  onItemsPerPageChange,
+  pageSizeOptions = [5, 10, 20],
+}: PaginationProps) {
+  if (totalItems <= 0) return null;
+
+  const startItem = (currentPage - 1) * itemsPerPage + 1;
+  const endItem = Math.min(currentPage * itemsPerPage, totalItems);
+
+  // Compute page numbers to display with smart windowing
+  const getPageNumbers = () => {
+    const pages: (number | string)[] = [];
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      if (currentPage <= 3) {
+        pages.push(1, 2, 3, 4, '...', totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1, '...', totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+      } else {
+        pages.push(1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages);
+      }
+    }
+    return pages;
+  };
+
+  const pageNumbers = getPageNumbers();
+
+  return (
+    <div className="px-4 py-3 border-t border-slate-800/80 bg-[#090d14] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+      <div className="flex items-center gap-3 text-slate-400">
+        <span>
+          Mostrando <strong className="text-white font-semibold">{startItem}</strong> -{' '}
+          <strong className="text-white font-semibold">{endItem}</strong> de{' '}
+          <strong className="text-white font-semibold">{totalItems}</strong> registros
+        </span>
+        <div className="hidden sm:flex items-center gap-1.5 ml-2 pl-3 border-l border-slate-800">
+          <span className="text-[11px] text-slate-500">Filas:</span>
+          <select
+            value={itemsPerPage}
+            onChange={(e) => {
+              onItemsPerPageChange(Number(e.target.value));
+              onPageChange(1);
+            }}
+            className="bg-[#121824] border border-slate-700/80 rounded-md px-2 py-0.5 text-[11px] text-white focus:outline-none cursor-pointer"
+          >
+            {pageSizeOptions.map((opt) => (
+              <option key={opt} value={opt}>
+                {opt}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-1.5">
+        <button
+          onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+          disabled={currentPage <= 1}
+          className="px-2.5 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed text-slate-300 hover:text-white transition-colors cursor-pointer flex items-center gap-1 font-semibold text-[11px]"
+        >
+          <ChevronLeft className="w-3.5 h-3.5" /> Anterior
+        </button>
+
+        <div className="flex items-center gap-1">
+          {pageNumbers.map((p, idx) => {
+            if (p === '...') {
+              return (
+                <span key={`dots-${idx}`} className="px-1 text-slate-600 font-bold">
+                  ...
+                </span>
+              );
+            }
+            const pageNum = Number(p);
+            return (
+              <button
+                key={pageNum}
+                onClick={() => onPageChange(pageNum)}
+                className={`w-7 h-7 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center ${
+                  currentPage === pageNum
+                    ? 'bg-cyan-600 text-white shadow-md shadow-cyan-950 font-black'
+                    : 'bg-slate-800/60 hover:bg-slate-700 text-slate-300 hover:text-white'
+                }`}
+              >
+                {pageNum}
+              </button>
+            );
+          })}
+        </div>
+
+        <button
+          onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+          disabled={currentPage >= totalPages}
+          className="px-2.5 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed text-slate-300 hover:text-white transition-colors cursor-pointer flex items-center gap-1 font-semibold text-[11px]"
+        >
+          Siguiente <ChevronRight className="w-3.5 h-3.5" />
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export default function AdminConsolePage() {
   const { data: session, status } = useSession();
@@ -57,6 +175,16 @@ export default function AdminConsolePage() {
   const [productSearch, setProductSearch] = useState('');
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<'all' | 'hair' | 'barber'>('all');
   const [orderFilter, setOrderFilter] = useState<string>('all');
+
+  // Pagination State
+  const [productsPage, setProductsPage] = useState(1);
+  const [productsPerPage, setProductsPerPage] = useState(10);
+
+  const [ordersPage, setOrdersPage] = useState(1);
+  const [ordersPerPage, setOrdersPerPage] = useState(10);
+
+  const [usersPage, setUsersPage] = useState(1);
+  const [usersPerPage, setUsersPerPage] = useState(10);
 
   // Product Modal State
   const [modalOpen, setModalOpen] = useState(false);
@@ -271,6 +399,55 @@ export default function AdminConsolePage() {
     if (orderFilter === 'all') return true;
     return o.status === orderFilter;
   });
+
+  // Auto-reset page when search or category filter changes
+  useEffect(() => {
+    setProductsPage(1);
+  }, [productSearch, selectedCategoryFilter]);
+
+  useEffect(() => {
+    setOrdersPage(1);
+  }, [orderFilter]);
+
+  // Total pages calculations
+  const totalProductPages = Math.ceil(filteredProducts.length / productsPerPage) || 1;
+  const totalOrderPages = Math.ceil(filteredOrders.length / ordersPerPage) || 1;
+  const totalUserPages = Math.ceil(users.length / usersPerPage) || 1;
+
+  // Clamping page limits
+  useEffect(() => {
+    if (productsPage > totalProductPages) {
+      setProductsPage(Math.max(1, totalProductPages));
+    }
+  }, [totalProductPages, productsPage]);
+
+  useEffect(() => {
+    if (ordersPage > totalOrderPages) {
+      setOrdersPage(Math.max(1, totalOrderPages));
+    }
+  }, [totalOrderPages, ordersPage]);
+
+  useEffect(() => {
+    if (usersPage > totalUserPages) {
+      setUsersPage(Math.max(1, totalUserPages));
+    }
+  }, [totalUserPages, usersPage]);
+
+  // Paginated slices
+  const paginatedProducts = filteredProducts.slice(
+    (productsPage - 1) * productsPerPage,
+    productsPage * productsPerPage
+  );
+
+  const paginatedOrders = filteredOrders.slice(
+    (ordersPage - 1) * ordersPerPage,
+    ordersPage * ordersPerPage
+  );
+
+  const paginatedUsers = users.slice(
+    (usersPage - 1) * usersPerPage,
+    usersPage * usersPerPage
+  );
 
   // =========================================================================
   // RENDER: SECURITY GATE / RESTRICTED ACCESS SCREEN
@@ -783,75 +960,93 @@ export default function AdminConsolePage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-800/60">
-                      {filteredProducts.map((p) => (
-                        <tr key={p.id} className="hover:bg-slate-800/30 transition-colors">
-                          <td className="py-3.5 px-4">
-                            <div className="flex items-center gap-3">
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img
-                                src={p.images[0]}
-                                alt={p.name}
-                                className="w-12 h-12 rounded-lg object-cover bg-black border border-slate-800 shrink-0"
-                              />
-                              <div className="min-w-0 max-w-xs">
-                                <p className="font-bold text-white truncate">{p.name}</p>
-                                <p className="text-[11px] text-slate-400 truncate">{p.punchline}</p>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="py-3.5 px-4">
-                            <span
-                              className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                                p.category === 'hair'
-                                  ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
-                                  : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-                              }`}
-                            >
-                              {p.category}
-                            </span>
-                          </td>
-                          <td className="py-3.5 px-4 text-slate-300 font-medium">
-                            {p.temp !== 'N/A' ? `🔥 ${p.temp}` : '—'}
-                          </td>
-                          <td className="py-3.5 px-4 font-bold text-white text-sm">
-                            S/ {p.prices?.reg}
-                          </td>
-                          <td className="py-3.5 px-4 font-bold text-emerald-400">
-                            S/ {p.prices?.salonPack}
-                          </td>
-                          <td className="py-3.5 px-4 text-right">
-                            <div className="flex items-center justify-end gap-2">
-                              <Link
-                                href={`/producto/${p.slug}`}
-                                target="_blank"
-                                className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
-                                title="Ver en tienda"
-                              >
-                                <ExternalLink className="w-3.5 h-3.5" />
-                              </Link>
-                              <button
-                                onClick={() => {
-                                  setEditingProduct(p);
-                                  setModalOpen(true);
-                                }}
-                                className="px-2.5 py-1.5 rounded-lg bg-cyan-600/20 hover:bg-cyan-600 hover:text-white text-cyan-400 text-xs font-bold transition-colors cursor-pointer flex items-center gap-1"
-                              >
-                                <Edit3 className="w-3.5 h-3.5" /> Editar
-                              </button>
-                              <button
-                                onClick={() => handleDeleteProduct(p.slug, p.name)}
-                                className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 transition-colors cursor-pointer"
-                                title="Eliminar equipo"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
+                      {paginatedProducts.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} className="py-12 text-center text-slate-500">
+                            No se encontraron equipos que coincidan con la búsqueda o filtro.
                           </td>
                         </tr>
-                      ))}
+                      ) : (
+                        paginatedProducts.map((p) => (
+                          <tr key={p.id} className="hover:bg-slate-800/30 transition-colors">
+                            <td className="py-3.5 px-4">
+                              <div className="flex items-center gap-3">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  src={p.images[0]}
+                                  alt={p.name}
+                                  className="w-12 h-12 rounded-lg object-cover bg-black border border-slate-800 shrink-0"
+                                />
+                                <div className="min-w-0 max-w-xs">
+                                  <p className="font-bold text-white truncate">{p.name}</p>
+                                  <p className="text-[11px] text-slate-400 truncate">{p.punchline}</p>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="py-3.5 px-4">
+                              <span
+                                className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                                  p.category === 'hair'
+                                    ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+                                    : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                                }`}
+                              >
+                                {p.category}
+                              </span>
+                            </td>
+                            <td className="py-3.5 px-4 text-slate-300 font-medium">
+                              {p.temp !== 'N/A' ? `🔥 ${p.temp}` : '—'}
+                            </td>
+                            <td className="py-3.5 px-4 font-bold text-white text-sm">
+                              S/ {p.prices?.reg}
+                            </td>
+                            <td className="py-3.5 px-4 font-bold text-emerald-400">
+                              S/ {p.prices?.salonPack}
+                            </td>
+                            <td className="py-3.5 px-4 text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                <Link
+                                  href={`/producto/${p.slug}`}
+                                  target="_blank"
+                                  className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
+                                  title="Ver en tienda"
+                                >
+                                  <ExternalLink className="w-3.5 h-3.5" />
+                                </Link>
+                                <button
+                                  onClick={() => {
+                                    setEditingProduct(p);
+                                    setModalOpen(true);
+                                  }}
+                                  className="px-2.5 py-1.5 rounded-lg bg-cyan-600/20 hover:bg-cyan-600 hover:text-white text-cyan-400 text-xs font-bold transition-colors cursor-pointer flex items-center gap-1"
+                                >
+                                  <Edit3 className="w-3.5 h-3.5" /> Editar
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteProduct(p.slug, p.name)}
+                                  className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 transition-colors cursor-pointer"
+                                  title="Eliminar equipo"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
                     </tbody>
                   </table>
                 </div>
+
+                <TablePagination
+                  currentPage={productsPage}
+                  totalPages={totalProductPages}
+                  totalItems={filteredProducts.length}
+                  itemsPerPage={productsPerPage}
+                  onPageChange={setProductsPage}
+                  onItemsPerPageChange={setProductsPerPage}
+                  pageSizeOptions={[5, 10, 20]}
+                />
               </div>
             </div>
           )}
@@ -924,7 +1119,7 @@ export default function AdminConsolePage() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-800/60">
-                        {filteredOrders.map((ord) => (
+                        {paginatedOrders.map((ord) => (
                           <tr key={ord.id} className="hover:bg-slate-800/30 transition-colors">
                             <td className="py-3.5 px-4 font-black text-white">#{ord.id}</td>
                             <td className="py-3.5 px-4">
@@ -980,6 +1175,16 @@ export default function AdminConsolePage() {
                       </tbody>
                     </table>
                   </div>
+
+                  <TablePagination
+                    currentPage={ordersPage}
+                    totalPages={totalOrderPages}
+                    totalItems={filteredOrders.length}
+                    itemsPerPage={ordersPerPage}
+                    onPageChange={setOrdersPage}
+                    onItemsPerPageChange={setOrdersPerPage}
+                    pageSizeOptions={[5, 10, 25]}
+                  />
                 </div>
               )}
             </div>
@@ -1010,14 +1215,14 @@ export default function AdminConsolePage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-800/60">
-                      {users.length === 0 ? (
+                      {paginatedUsers.length === 0 ? (
                         <tr>
                           <td colSpan={5} className="py-12 text-center text-slate-500">
                             No hay inicios de sesión registrados todavía.
                           </td>
                         </tr>
                       ) : (
-                        users.map((u, i) => (
+                        paginatedUsers.map((u, i) => (
                           <tr key={u.id || i} className="hover:bg-slate-800/30 transition-colors">
                             <td className="py-3 px-4 font-mono text-slate-500">#{u.id || i + 1}</td>
                             <td className="py-3 px-4 font-bold text-white">{u.email}</td>
@@ -1046,6 +1251,16 @@ export default function AdminConsolePage() {
                     </tbody>
                   </table>
                 </div>
+
+                <TablePagination
+                  currentPage={usersPage}
+                  totalPages={totalUserPages}
+                  totalItems={users.length}
+                  itemsPerPage={usersPerPage}
+                  onPageChange={setUsersPage}
+                  onItemsPerPageChange={setUsersPerPage}
+                  pageSizeOptions={[5, 10, 25, 50]}
+                />
               </div>
             </div>
           )}
