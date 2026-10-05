@@ -1,5 +1,5 @@
 import React from 'react';
-import { Target, Eye, Sparkles } from 'lucide-react';
+import { Target, Eye } from 'lucide-react';
 
 export const metadata = {
   title: 'Nosotros | SUMAQ Importaciones - Lizze Brasil Perú',

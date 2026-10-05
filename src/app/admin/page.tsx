@@ -1,9 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import {
-  ShieldAlert,
   ShieldCheck,
   Package,
   ShoppingBag,
@@ -16,26 +15,19 @@ import {
   MessageCircle,
   RefreshCw,
   CheckCircle2,
-  AlertTriangle,
-  Server,
-  Layers,
   Database,
   Search,
   DollarSign,
-  Lock,
   ChevronRight,
   ChevronLeft,
-  Sliders,
   Check,
   Eye,
   LogOut,
-  Terminal,
   Activity,
-  FileText
 } from 'lucide-react';
 import { Product } from '@/lib/products-data';
 import { OrderRecord } from '@/lib/db';
-import { useSession, signIn, signOut } from 'next-auth/react';
+import { useSession, signOut } from 'next-auth/react';
 
 interface PaginationProps {
   currentPage: number;
@@ -209,8 +201,7 @@ export default function AdminConsolePage() {
     setTimeout(() => setToastMessage(null), 3500);
   };
 
-  const fetchData = async () => {
-    setLoading(true);
+  const fetchData = useCallback(async () => {
     try {
       const [resProd, resOrders, resUsers] = await Promise.all([
         fetch('/api/admin/products').then((r) => r.json()),
@@ -226,11 +217,31 @@ export default function AdminConsolePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    let ignore = false;
+    Promise.all([
+      fetch('/api/admin/products').then((r) => r.json()),
+      fetch('/api/admin/orders').then((r) => r.json()),
+      fetch('/api/admin/users').then((r) => r.json()),
+    ])
+      .then(([resProd, resOrders, resUsers]) => {
+        if (!ignore) {
+          if (Array.isArray(resProd)) setProducts(resProd);
+          if (Array.isArray(resOrders)) setOrders(resOrders);
+          if (Array.isArray(resUsers)) setUsers(resUsers);
+          setLoading(false);
+        }
+      })
+      .catch((err) => {
+        console.error('Error fetching admin data:', err);
+        if (!ignore) setLoading(false);
+      });
+
+    return () => {
+      ignore = true;
+    };
   }, []);
 
 
@@ -368,53 +379,30 @@ export default function AdminConsolePage() {
     return o.status === orderFilter;
   });
 
-  // Auto-reset page when search or category filter changes
-  useEffect(() => {
-    setProductsPage(1);
-  }, [productSearch, selectedCategoryFilter]);
-
-  useEffect(() => {
-    setOrdersPage(1);
-  }, [orderFilter]);
-
   // Total pages calculations
-  const totalProductPages = Math.ceil(filteredProducts.length / productsPerPage) || 1;
-  const totalOrderPages = Math.ceil(filteredOrders.length / ordersPerPage) || 1;
-  const totalUserPages = Math.ceil(users.length / usersPerPage) || 1;
+  const totalProductPages = Math.max(1, Math.ceil(filteredProducts.length / productsPerPage));
+  const totalOrderPages = Math.max(1, Math.ceil(filteredOrders.length / ordersPerPage));
+  const totalUserPages = Math.max(1, Math.ceil(users.length / usersPerPage));
 
-  // Clamping page limits
-  useEffect(() => {
-    if (productsPage > totalProductPages) {
-      setProductsPage(Math.max(1, totalProductPages));
-    }
-  }, [totalProductPages, productsPage]);
-
-  useEffect(() => {
-    if (ordersPage > totalOrderPages) {
-      setOrdersPage(Math.max(1, totalOrderPages));
-    }
-  }, [totalOrderPages, ordersPage]);
-
-  useEffect(() => {
-    if (usersPage > totalUserPages) {
-      setUsersPage(Math.max(1, totalUserPages));
-    }
-  }, [totalUserPages, usersPage]);
+  // Clamped safe page numbers (pure derivation without cascading renders)
+  const safeProductsPage = Math.min(Math.max(1, productsPage), totalProductPages);
+  const safeOrdersPage = Math.min(Math.max(1, ordersPage), totalOrderPages);
+  const safeUsersPage = Math.min(Math.max(1, usersPage), totalUserPages);
 
   // Paginated slices
   const paginatedProducts = filteredProducts.slice(
-    (productsPage - 1) * productsPerPage,
-    productsPage * productsPerPage
+    (safeProductsPage - 1) * productsPerPage,
+    safeProductsPage * productsPerPage
   );
 
   const paginatedOrders = filteredOrders.slice(
-    (ordersPage - 1) * ordersPerPage,
-    ordersPage * ordersPerPage
+    (safeOrdersPage - 1) * ordersPerPage,
+    safeOrdersPage * ordersPerPage
   );
 
   const paginatedUsers = users.slice(
-    (usersPage - 1) * usersPerPage,
-    usersPage * usersPerPage
+    (safeUsersPage - 1) * usersPerPage,
+    safeUsersPage * usersPerPage
   );
 
   // =========================================================================
@@ -545,8 +533,8 @@ export default function AdminConsolePage() {
                 OP
               </div>
               <div className="min-w-0">
-                <p className="text-xs font-bold text-white truncate">Operador Maestro</p>
-                <p className="text-[10px] text-slate-500 truncate">admin@sumaq.pe</p>
+                <p className="text-xs font-bold text-white truncate">{session?.user?.name || 'Operador SUMAQ'}</p>
+                <p className="text-[10px] text-slate-500 truncate">{session?.user?.email || 'admin@sumaq.pe'}</p>
               </div>
             </div>
             <button
@@ -779,7 +767,10 @@ export default function AdminConsolePage() {
                   <input
                     type="text"
                     value={productSearch}
-                    onChange={(e) => setProductSearch(e.target.value)}
+                    onChange={(e) => {
+                      setProductSearch(e.target.value);
+                      setProductsPage(1);
+                    }}
                     placeholder="Buscar equipo por nombre o punchline..."
                     className="w-full bg-[#0d121c] border border-slate-800 rounded-xl px-4 py-2.5 pl-10 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
                   />
@@ -788,7 +779,10 @@ export default function AdminConsolePage() {
 
                 <div className="flex gap-2">
                   <button
-                    onClick={() => setSelectedCategoryFilter('all')}
+                    onClick={() => {
+                      setSelectedCategoryFilter('all');
+                      setProductsPage(1);
+                    }}
                     className={`px-3 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
                       selectedCategoryFilter === 'all'
                         ? 'bg-slate-700 text-white'
@@ -798,7 +792,10 @@ export default function AdminConsolePage() {
                     Todos ({products.length})
                   </button>
                   <button
-                    onClick={() => setSelectedCategoryFilter('hair')}
+                    onClick={() => {
+                      setSelectedCategoryFilter('hair');
+                      setProductsPage(1);
+                    }}
                     className={`px-3 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
                       selectedCategoryFilter === 'hair'
                         ? 'bg-cyan-600 text-white'
@@ -808,7 +805,10 @@ export default function AdminConsolePage() {
                     Línea Hair ({hairCount})
                   </button>
                   <button
-                    onClick={() => setSelectedCategoryFilter('barber')}
+                    onClick={() => {
+                      setSelectedCategoryFilter('barber');
+                      setProductsPage(1);
+                    }}
                     className={`px-3 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
                       selectedCategoryFilter === 'barber'
                         ? 'bg-amber-600 text-white'
@@ -914,7 +914,7 @@ export default function AdminConsolePage() {
                 </div>
 
                 <TablePagination
-                  currentPage={productsPage}
+                  currentPage={safeProductsPage}
                   totalPages={totalProductPages}
                   totalItems={filteredProducts.length}
                   itemsPerPage={productsPerPage}
@@ -941,7 +941,10 @@ export default function AdminConsolePage() {
 
                 <div className="flex gap-2">
                   <button
-                    onClick={() => setOrderFilter('all')}
+                    onClick={() => {
+                      setOrderFilter('all');
+                      setOrdersPage(1);
+                    }}
                     className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
                       orderFilter === 'all'
                         ? 'bg-slate-700 text-white'
@@ -951,7 +954,10 @@ export default function AdminConsolePage() {
                     Todas ({orders.length})
                   </button>
                   <button
-                    onClick={() => setOrderFilter('pendiente_whatsapp')}
+                    onClick={() => {
+                      setOrderFilter('pendiente_whatsapp');
+                      setOrdersPage(1);
+                    }}
                     className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
                       orderFilter === 'pendiente_whatsapp'
                         ? 'bg-amber-600 text-white'
@@ -961,7 +967,10 @@ export default function AdminConsolePage() {
                     Pendientes ({pendingOrders})
                   </button>
                   <button
-                    onClick={() => setOrderFilter('confirmado')}
+                    onClick={() => {
+                      setOrderFilter('confirmado');
+                      setOrdersPage(1);
+                    }}
                     className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
                       orderFilter === 'confirmado'
                         ? 'bg-emerald-600 text-white'
@@ -1052,7 +1061,7 @@ export default function AdminConsolePage() {
                   </div>
 
                   <TablePagination
-                    currentPage={ordersPage}
+                    currentPage={safeOrdersPage}
                     totalPages={totalOrderPages}
                     totalItems={filteredOrders.length}
                     itemsPerPage={ordersPerPage}
@@ -1128,7 +1137,7 @@ export default function AdminConsolePage() {
                 </div>
 
                 <TablePagination
-                  currentPage={usersPage}
+                  currentPage={safeUsersPage}
                   totalPages={totalUserPages}
                   totalItems={users.length}
                   itemsPerPage={usersPerPage}
