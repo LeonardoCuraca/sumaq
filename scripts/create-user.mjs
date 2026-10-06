@@ -7,11 +7,35 @@ import { promisify } from 'node:util';
 import { loadEnv, getDatabaseUrl } from './env.mjs';
 
 loadEnv();
-const [email, name, role = 'salon_partner'] = process.argv.slice(2);
-const password = process.env.USER_PASSWORD;
+const args = process.argv.slice(2);
+
+let email = '';
+let name = '';
+let role = 'salon_partner';
+let password = process.env.USER_PASSWORD || '';
+
+if (args.length >= 4 && ['admin', 'salon_partner'].includes(args[2])) {
+  // Variante: email password role name
+  [email, password, role, name] = args;
+} else if (args.length >= 3 && ['admin', 'salon_partner'].includes(args[2])) {
+  // Variante: email name role [password]
+  [email, name, role] = args;
+  if (args[3]) password = args[3];
+} else if (args.length >= 2) {
+  [email, name] = args;
+  if (args[2] && ['admin', 'salon_partner'].includes(args[2])) {
+    role = args[2];
+  } else if (args[2]) {
+    password = args[2];
+  }
+  if (args[3]) password = args[3];
+}
 
 if (!email || !name || !password) {
-  console.error('Uso: USER_PASSWORD=*** npm run user:create -- correo "Nombre" [admin|salon_partner]');
+  console.error('Uso:');
+  console.error('  node scripts/create-user.mjs correo "password123" admin "Nombre"');
+  console.error('O vía variable de entorno:');
+  console.error('  $env:USER_PASSWORD="..."; npm run user:create -- correo "Nombre" admin');
   process.exit(1);
 }
 if (!['admin', 'salon_partner'].includes(role)) {
