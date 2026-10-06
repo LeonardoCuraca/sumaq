@@ -1,57 +1,32 @@
-import { put } from '@vercel/blob';
 import { NextResponse } from 'next/server';
+import { requireAdmin } from '@/lib/guards';
+import { serverError, badRequest } from '@/lib/api';
+import { MAX_IMAGE_BYTES, sniffImageType, uploadProductImage } from '@/lib/blob';
 
 export async function POST(request: Request): Promise<NextResponse> {
-  const token = process.env.BLOB_READ_WRITE_TOKEN || process.env.STORAGE_READ_WRITE_TOKEN;
+  const denied = await requireAdmin();
+  if (denied) return denied;
 
-  if (!token) {
-    return NextResponse.json(
-      {
-        error:
-          'BLOB_READ_WRITE_TOKEN no configurado en Vercel. Ve a Storage > Blob y asegúrate de conectar el Blob Store a tu proyecto.',
-      },
-      { status: 500 }
-    );
+  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+    return NextResponse.json({ error: 'El almacenamiento de imágenes no está configurado.' }, { status: 500 });
   }
 
   try {
-    const contentType = request.headers.get('content-type') || '';
+    const declared = Number(request.headers.get('content-length') || 0);
+    if (declared > MAX_IMAGE_BYTES + 10_000) return badRequest('La imagen supera 5 MB.');
 
-    // Handle multipart/form-data upload
-    if (contentType.includes('multipart/form-data')) {
-      const formData = await request.formData();
-      const file = formData.get('file') as File | null;
+    const form = await request.formData();
+    const file = form.get('file');
+    if (!(file instanceof File)) return badRequest('No se envió ningún archivo.');
+    if (file.size === 0 || file.size > MAX_IMAGE_BYTES) return badRequest('La imagen debe pesar entre 1 byte y 5 MB.');
 
-      if (!file) {
-        return NextResponse.json({ error: 'No se envió ningún archivo en el formulario' }, { status: 400 });
-      }
+    const buffer = await file.arrayBuffer();
+    const realType = sniffImageType(new Uint8Array(buffer));
+    if (!realType) return badRequest('Formato no permitido. Usa JPG, PNG o WebP.');
 
-      const filename = `products/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
-      const blob = await put(filename, file, {
-        access: 'public',
-        token: token,
-      });
-
-      return NextResponse.json(blob);
-    }
-
-    // Handle direct binary stream upload
-    const { searchParams } = new URL(request.url);
-    const rawFilename = searchParams.get('filename') || 'upload.jpg';
-    const filename = `products/${Date.now()}-${rawFilename.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
-
-    if (!request.body) {
-      return NextResponse.json({ error: 'Cuerpo de archivo vacío' }, { status: 400 });
-    }
-
-    const blob = await put(filename, request.body, {
-      access: 'public',
-      token: token,
-    });
-
-    return NextResponse.json(blob);
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Error desconocido al subir a Blob';
-    return NextResponse.json({ error: message }, { status: 500 });
+    const blob = await uploadProductImage(buffer, realType);
+    return NextResponse.json({ url: blob.url });
+  } catch (error) {
+    return serverError('upload', error);
   }
 }

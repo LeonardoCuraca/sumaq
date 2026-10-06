@@ -1,9 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import {
-  ShieldAlert,
   ShieldCheck,
   Package,
   ShoppingBag,
@@ -16,26 +15,19 @@ import {
   MessageCircle,
   RefreshCw,
   CheckCircle2,
-  AlertTriangle,
-  Server,
-  Layers,
   Database,
   Search,
   DollarSign,
-  Lock,
   ChevronRight,
   ChevronLeft,
-  Sliders,
   Check,
   Eye,
   LogOut,
-  Terminal,
   Activity,
-  FileText
 } from 'lucide-react';
 import { Product } from '@/lib/products-data';
 import { OrderRecord } from '@/lib/db';
-import { useSession, signIn, signOut } from 'next-auth/react';
+import { useSession, signOut } from 'next-auth/react';
 
 interface PaginationProps {
   currentPage: number;
@@ -155,15 +147,11 @@ function TablePagination({
 }
 
 export default function AdminConsolePage() {
-  const { data: session, status } = useSession();
+  const { data: session } = useSession();
 
   // Navigation State
   const [activeSection, setActiveSection] = useState<'overview' | 'products' | 'orders' | 'users' | 'system'>('overview');
 
-  // Security gatekeeper state (allows quick master pass if session not configured)
-  const [isUnlocked, setIsUnlocked] = useState(false);
-  const [gatePassword, setGatePassword] = useState('');
-  const [gateError, setGateError] = useState('');
 
   // Data state
   const [products, setProducts] = useState<Product[]>([]);
@@ -208,25 +196,12 @@ export default function AdminConsolePage() {
     return () => clearInterval(interval);
   }, []);
 
-  // Check if session has admin role or localStorage unlocked
-  useEffect(() => {
-    if (session?.user && (session.user as { role?: string }).role === 'admin') {
-      setIsUnlocked(true);
-    } else {
-      const savedPass = sessionStorage.getItem('sumaq_admin_unlocked');
-      if (savedPass === 'true') {
-        setIsUnlocked(true);
-      }
-    }
-  }, [session]);
-
   const notify = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3500);
   };
 
-  const fetchData = async () => {
-    setLoading(true);
+  const fetchData = useCallback(async () => {
     try {
       const [resProd, resOrders, resUsers] = await Promise.all([
         fetch('/api/admin/products').then((r) => r.json()),
@@ -242,34 +217,38 @@ export default function AdminConsolePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    if (isUnlocked) {
-      fetchData();
-    }
-  }, [isUnlocked]);
+    let ignore = false;
+    Promise.all([
+      fetch('/api/admin/products').then((r) => r.json()),
+      fetch('/api/admin/orders').then((r) => r.json()),
+      fetch('/api/admin/users').then((r) => r.json()),
+    ])
+      .then(([resProd, resOrders, resUsers]) => {
+        if (!ignore) {
+          if (Array.isArray(resProd)) setProducts(resProd);
+          if (Array.isArray(resOrders)) setOrders(resOrders);
+          if (Array.isArray(resUsers)) setUsers(resUsers);
+          setLoading(false);
+        }
+      })
+      .catch((err) => {
+        console.error('Error fetching admin data:', err);
+        if (!ignore) setLoading(false);
+      });
 
-  // Handle Security Gate Unlock
-  const handleGateSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (gatePassword === 'Lizze2026' || gatePassword === 'admin') {
-      sessionStorage.setItem('sumaq_admin_unlocked', 'true');
-      setIsUnlocked(true);
-      setGateError('');
-      notify('Acceso autorizado como Operador del Sistema.');
-    } else {
-      setGateError('Clave de seguridad incorrecta. Acceso restringido.');
-    }
-  };
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
 
   const handleAdminLogout = () => {
-    sessionStorage.removeItem('sumaq_admin_unlocked');
-    setIsUnlocked(false);
-    if (session) {
-      signOut({ redirect: false });
-    }
+    signOut({ callbackUrl: '/login' });
   };
+
 
   // Image Upload directly to Vercel Blob
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -342,7 +321,7 @@ export default function AdminConsolePage() {
     if (!confirm(`¿Eliminar definitivamente el equipo "${name}" del catálogo?`)) return;
 
     try {
-      const res = await fetch(`/api/admin/products?slug=${slug}`, {
+      const res = await fetch(`/api/admin/products?slug=${encodeURIComponent(slug)}`, {
         method: 'DELETE',
       });
       const data = await res.json();
@@ -400,147 +379,31 @@ export default function AdminConsolePage() {
     return o.status === orderFilter;
   });
 
-  // Auto-reset page when search or category filter changes
-  useEffect(() => {
-    setProductsPage(1);
-  }, [productSearch, selectedCategoryFilter]);
-
-  useEffect(() => {
-    setOrdersPage(1);
-  }, [orderFilter]);
-
   // Total pages calculations
-  const totalProductPages = Math.ceil(filteredProducts.length / productsPerPage) || 1;
-  const totalOrderPages = Math.ceil(filteredOrders.length / ordersPerPage) || 1;
-  const totalUserPages = Math.ceil(users.length / usersPerPage) || 1;
+  const totalProductPages = Math.max(1, Math.ceil(filteredProducts.length / productsPerPage));
+  const totalOrderPages = Math.max(1, Math.ceil(filteredOrders.length / ordersPerPage));
+  const totalUserPages = Math.max(1, Math.ceil(users.length / usersPerPage));
 
-  // Clamping page limits
-  useEffect(() => {
-    if (productsPage > totalProductPages) {
-      setProductsPage(Math.max(1, totalProductPages));
-    }
-  }, [totalProductPages, productsPage]);
-
-  useEffect(() => {
-    if (ordersPage > totalOrderPages) {
-      setOrdersPage(Math.max(1, totalOrderPages));
-    }
-  }, [totalOrderPages, ordersPage]);
-
-  useEffect(() => {
-    if (usersPage > totalUserPages) {
-      setUsersPage(Math.max(1, totalUserPages));
-    }
-  }, [totalUserPages, usersPage]);
+  // Clamped safe page numbers (pure derivation without cascading renders)
+  const safeProductsPage = Math.min(Math.max(1, productsPage), totalProductPages);
+  const safeOrdersPage = Math.min(Math.max(1, ordersPage), totalOrderPages);
+  const safeUsersPage = Math.min(Math.max(1, usersPage), totalUserPages);
 
   // Paginated slices
   const paginatedProducts = filteredProducts.slice(
-    (productsPage - 1) * productsPerPage,
-    productsPage * productsPerPage
+    (safeProductsPage - 1) * productsPerPage,
+    safeProductsPage * productsPerPage
   );
 
   const paginatedOrders = filteredOrders.slice(
-    (ordersPage - 1) * ordersPerPage,
-    ordersPage * ordersPerPage
+    (safeOrdersPage - 1) * ordersPerPage,
+    safeOrdersPage * ordersPerPage
   );
 
   const paginatedUsers = users.slice(
-    (usersPage - 1) * usersPerPage,
-    usersPage * usersPerPage
+    (safeUsersPage - 1) * usersPerPage,
+    safeUsersPage * usersPerPage
   );
-
-  // =========================================================================
-  // RENDER: SECURITY GATE / RESTRICTED ACCESS SCREEN
-  // =========================================================================
-  if (!isUnlocked) {
-    return (
-      <div className="min-h-screen bg-[#07090e] text-slate-100 flex items-center justify-center p-4 relative overflow-hidden">
-        {/* Subtle Background Circuit Glow */}
-        <div className="absolute -top-40 -left-40 w-96 h-96 bg-cyan-600/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-emerald-600/10 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="max-w-md w-full bg-[#0d121c] border border-slate-800 rounded-3xl p-8 sm:p-10 shadow-2xl relative z-10">
-          <div className="flex flex-col items-center text-center space-y-3 mb-8">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700/80 flex items-center justify-center text-cyan-400 shadow-inner">
-              <ShieldAlert className="w-7 h-7" />
-            </div>
-            <div>
-              <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 text-[10px] font-black uppercase tracking-widest">
-                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
-                CONSOLA RESTRINGIDA
-              </span>
-              <h1 className="text-xl sm:text-2xl font-black text-white mt-2 tracking-tight">
-                SUMAQ Core Administration
-              </h1>
-              <p className="text-xs text-slate-400 mt-1">
-                Portal de control privado para operadores y administradores autorizados.
-              </p>
-            </div>
-          </div>
-
-          {gateError && (
-            <div className="p-3 mb-5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 shrink-0" />
-              <span>{gateError}</span>
-            </div>
-          )}
-
-          <form onSubmit={handleGateSubmit} className="space-y-4 text-xs">
-            <div>
-              <label className="block text-slate-300 font-bold mb-1.5 uppercase tracking-wider text-[11px]">
-                Clave de Seguridad Operativa
-              </label>
-              <div className="relative">
-                <input
-                  type="password"
-                  required
-                  autoFocus
-                  value={gatePassword}
-                  onChange={(e) => setGatePassword(e.target.value)}
-                  placeholder="Introduce contraseña de administrador"
-                  className="w-full bg-[#121824] border border-slate-700/80 rounded-xl px-4 py-3 pl-10 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
-                />
-                <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold uppercase tracking-wider text-xs shadow-lg shadow-cyan-900/40 transition-all cursor-pointer flex items-center justify-center gap-2"
-            >
-              Desbloquear Consola <ChevronRight className="w-4 h-4" />
-            </button>
-          </form>
-
-          {/* Quick Credential Hint */}
-          <div className="mt-8 pt-6 border-t border-slate-800/80 text-[11px] text-slate-400 space-y-2">
-            <p className="text-slate-300 font-semibold flex items-center gap-1.5">
-              <Terminal className="w-3.5 h-3.5 text-cyan-400" /> Clave de acceso predeterminada:
-            </p>
-            <div className="p-2.5 rounded-xl bg-black/40 border border-slate-800 flex items-center justify-between font-mono text-[11px] text-cyan-300">
-              <span>Lizze2026</span>
-              <button
-                type="button"
-                onClick={() => setGatePassword('Lizze2026')}
-                className="text-[10px] text-slate-400 hover:text-white uppercase font-sans font-bold underline cursor-pointer"
-              >
-                Autocompletar
-              </button>
-            </div>
-          </div>
-
-          <div className="mt-6 text-center">
-            <Link
-              href="/"
-              className="text-xs text-slate-500 hover:text-slate-300 transition-colors inline-flex items-center gap-1"
-            >
-              &larr; Volver a la Tienda Pública
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   // =========================================================================
   // RENDER: MAIN ADMIN PORTAL (ISOLATED DEDICATED SHELL)
@@ -670,8 +533,8 @@ export default function AdminConsolePage() {
                 OP
               </div>
               <div className="min-w-0">
-                <p className="text-xs font-bold text-white truncate">Operador Maestro</p>
-                <p className="text-[10px] text-slate-500 truncate">admin@sumaq.pe</p>
+                <p className="text-xs font-bold text-white truncate">{session?.user?.name || 'Operador SUMAQ'}</p>
+                <p className="text-[10px] text-slate-500 truncate">{session?.user?.email || 'admin@sumaq.pe'}</p>
               </div>
             </div>
             <button
@@ -904,7 +767,10 @@ export default function AdminConsolePage() {
                   <input
                     type="text"
                     value={productSearch}
-                    onChange={(e) => setProductSearch(e.target.value)}
+                    onChange={(e) => {
+                      setProductSearch(e.target.value);
+                      setProductsPage(1);
+                    }}
                     placeholder="Buscar equipo por nombre o punchline..."
                     className="w-full bg-[#0d121c] border border-slate-800 rounded-xl px-4 py-2.5 pl-10 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
                   />
@@ -913,7 +779,10 @@ export default function AdminConsolePage() {
 
                 <div className="flex gap-2">
                   <button
-                    onClick={() => setSelectedCategoryFilter('all')}
+                    onClick={() => {
+                      setSelectedCategoryFilter('all');
+                      setProductsPage(1);
+                    }}
                     className={`px-3 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
                       selectedCategoryFilter === 'all'
                         ? 'bg-slate-700 text-white'
@@ -923,7 +792,10 @@ export default function AdminConsolePage() {
                     Todos ({products.length})
                   </button>
                   <button
-                    onClick={() => setSelectedCategoryFilter('hair')}
+                    onClick={() => {
+                      setSelectedCategoryFilter('hair');
+                      setProductsPage(1);
+                    }}
                     className={`px-3 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
                       selectedCategoryFilter === 'hair'
                         ? 'bg-cyan-600 text-white'
@@ -933,7 +805,10 @@ export default function AdminConsolePage() {
                     Línea Hair ({hairCount})
                   </button>
                   <button
-                    onClick={() => setSelectedCategoryFilter('barber')}
+                    onClick={() => {
+                      setSelectedCategoryFilter('barber');
+                      setProductsPage(1);
+                    }}
                     className={`px-3 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
                       selectedCategoryFilter === 'barber'
                         ? 'bg-amber-600 text-white'
@@ -1039,7 +914,7 @@ export default function AdminConsolePage() {
                 </div>
 
                 <TablePagination
-                  currentPage={productsPage}
+                  currentPage={safeProductsPage}
                   totalPages={totalProductPages}
                   totalItems={filteredProducts.length}
                   itemsPerPage={productsPerPage}
@@ -1066,7 +941,10 @@ export default function AdminConsolePage() {
 
                 <div className="flex gap-2">
                   <button
-                    onClick={() => setOrderFilter('all')}
+                    onClick={() => {
+                      setOrderFilter('all');
+                      setOrdersPage(1);
+                    }}
                     className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
                       orderFilter === 'all'
                         ? 'bg-slate-700 text-white'
@@ -1076,7 +954,10 @@ export default function AdminConsolePage() {
                     Todas ({orders.length})
                   </button>
                   <button
-                    onClick={() => setOrderFilter('pendiente_whatsapp')}
+                    onClick={() => {
+                      setOrderFilter('pendiente_whatsapp');
+                      setOrdersPage(1);
+                    }}
                     className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
                       orderFilter === 'pendiente_whatsapp'
                         ? 'bg-amber-600 text-white'
@@ -1086,7 +967,10 @@ export default function AdminConsolePage() {
                     Pendientes ({pendingOrders})
                   </button>
                   <button
-                    onClick={() => setOrderFilter('confirmado')}
+                    onClick={() => {
+                      setOrderFilter('confirmado');
+                      setOrdersPage(1);
+                    }}
                     className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
                       orderFilter === 'confirmado'
                         ? 'bg-emerald-600 text-white'
@@ -1177,7 +1061,7 @@ export default function AdminConsolePage() {
                   </div>
 
                   <TablePagination
-                    currentPage={ordersPage}
+                    currentPage={safeOrdersPage}
                     totalPages={totalOrderPages}
                     totalItems={filteredOrders.length}
                     itemsPerPage={ordersPerPage}
@@ -1253,7 +1137,7 @@ export default function AdminConsolePage() {
                 </div>
 
                 <TablePagination
-                  currentPage={usersPage}
+                  currentPage={safeUsersPage}
                   totalPages={totalUserPages}
                   totalItems={users.length}
                   itemsPerPage={usersPerPage}

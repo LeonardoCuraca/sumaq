@@ -1,36 +1,81 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SUMAQ Importaciones • E-Commerce & B2B Portal
 
-## Getting Started
+Plataforma oficial de comercio electrónico y distribución de herramientas térmicas profesionales **Lizze Brasil** para peluquerías, barberías y salones en Perú.
 
-First, run the development server:
+---
 
+## 🛠 Stack Tecnológico
+
+- **Framework**: [Next.js 16 (App Router)](https://nextjs.org/) + React 19 + TypeScript.
+- **Base de Datos**: [Neon Serverless PostgreSQL](https://neon.tech/) con `@neondatabase/serverless` y migraciones versionadas en `/migrations`.
+- **Almacenamiento de Archivos**: [Vercel Blob](https://vercel.com/docs/storage/vercel-blob) con validación por magic-bytes y tamaños máximos.
+- **Autenticación**: [Auth.js (NextAuth v5)](https://authjs.dev/) con credenciales seguras hasheadas con `scrypt` y rate limiting serverless en Neon DB.
+- **Seguridad perimetral**: Capa `src/proxy.ts` (Next 16) + `requireAdmin()` en cada route handler privado + headers HTTP estrictos.
+- **Estilos**: Tailwind CSS v4, Lucide Icons, clsx, tailwind-merge.
+- **Pruebas**: Vitest.
+
+---
+
+## 🚀 Puesta en Marcha en Local
+
+### 1. Requisitos
+- Node.js 22+
+- npm 10+
+- Instancia activa de Neon PostgreSQL
+
+### 2. Configurar variables de entorno
+Copia el archivo de ejemplo:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cp .env.example .env.local
+```
+Edita `.env.local` configurando al menos:
+- `DATABASE_URL`
+- `AUTH_SECRET`
+- `BLOB_READ_WRITE_TOKEN`
+
+### 3. Migraciones y Datos Semilla
+Ejecuta las migraciones de esquemas SQL:
+```bash
+npm run db:migrate
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Carga el catálogo inicial de productos (si la tabla está vacía):
+```bash
+npm run db:seed
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Crea tu primer usuario administrador:
+```bash
+USER_PASSWORD="TuPasswordSegura2026" npm run user:create -- admin@sumaq.pe "Administrador SUMAQ" admin
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 4. Iniciar Servidor de Desarrollo
+```bash
+npm run dev
+```
+Abre [http://localhost:3000](http://localhost:3000) en el navegador.
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## 🧪 Comandos Disponibles
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Comando | Descripción |
+|---|---|
+| `npm run dev` | Inicia el entorno local de desarrollo |
+| `npm run build` | Compila la aplicación para producción |
+| `npm run start` | Arranca la aplicación compilada |
+| `npm run typecheck` | Comprueba tipos con `tsc --noEmit` |
+| `npm run lint` | Ejecuta ESLint |
+| `npm run test` | Ejecuta la suite de pruebas unitarias con Vitest |
+| `npm run db:migrate` | Aplica todas las migraciones SQL pendientes |
+| `npm run db:seed` | Carga el catálogo base de herramientas |
+| `npm run user:create` | Crea o actualiza usuarios (admin / salon_partner) |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+## 🔐 Seguridad y Producción
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **Sin bypasses cliente**: La autenticación y autorización se verifican estrictamente en el servidor en cada llamada API y vista `/admin`.
+- **Precios autoritativos**: El cálculo de subtotales, descuentos de salón y fletes se realiza exclusivamente en el backend (`src/lib/pricing.ts`).
+- **Defensa contra abusos**: Intentos de login, cotizaciones, órdenes y envíos de contacto cuentan con rate limiting distribuido en PostgreSQL (`checkRateLimit`).
+- **Validación Zod**: Todo input externo (imágenes, productos, leads, formularios) está validado con esquemas estrictos.

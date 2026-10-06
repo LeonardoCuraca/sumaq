@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Search, X, ShoppingBag } from 'lucide-react';
 import { INITIAL_PRODUCTS, Product } from '@/lib/products-data';
 import { useCart } from '@/context/CartContext';
+import { whatsappUrl } from '@/lib/site';
 
 interface SearchModalProps {
   isOpen: boolean;
@@ -13,12 +14,23 @@ interface SearchModalProps {
 
 export function SearchModal({ isOpen, onClose }: SearchModalProps) {
   const [query, setQuery] = useState('');
+  const [catalog, setCatalog] = useState<Product[]>(INITIAL_PRODUCTS);
   const { addToCart } = useCart();
+
+  React.useEffect(() => {
+    if (!isOpen) return;
+    fetch('/api/products')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) setCatalog(data);
+      })
+      .catch(() => {});
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
   const filtered = query.trim()
-    ? INITIAL_PRODUCTS.filter(
+    ? catalog.filter(
         (p) =>
           p.name.toLowerCase().includes(query.toLowerCase()) ||
           p.punchline.toLowerCase().includes(query.toLowerCase()) ||
@@ -60,7 +72,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
                 <span className="text-white">{query}</span>&quot;
               </p>
               <a
-                href={`https://wa.me/51957709262?text=Hola,%20busco%20información%20sobre%20${encodeURIComponent(query)}`}
+                href={whatsappUrl(`Hola, busco información sobre ${query}`)}
                 target="_blank"
                 rel="noreferrer"
                 className="mt-3 inline-flex items-center gap-1.5 text-xs text-sumaq-400 hover:underline"

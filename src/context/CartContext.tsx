@@ -30,21 +30,46 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [wishlist, setWishlist] = useState<string[]>([]);
   const [mounted, setMounted] = useState(false);
 
-  // Initialize from LocalStorage
+  // Initialize from LocalStorage safely
   useEffect(() => {
     try {
       const savedCart = localStorage.getItem('sumaq_cart_next');
-      if (savedCart) {
-        setCart(JSON.parse(savedCart));
-      }
       const savedWishlist = localStorage.getItem('sumaq_wishlist_next');
-      if (savedWishlist) {
-        setWishlist(JSON.parse(savedWishlist));
-      }
+
+      queueMicrotask(() => {
+        if (savedCart) {
+          try {
+            const parsed = JSON.parse(savedCart);
+            if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+              // Filter only valid CartItem entries
+              const cleanCart: Record<string, CartItem> = {};
+              for (const [slug, item] of Object.entries(parsed)) {
+                const it = item as CartItem;
+                if (it && it.product && typeof it.product.id === 'string' && typeof it.qty === 'number' && it.qty > 0) {
+                  cleanCart[slug] = it;
+                }
+              }
+              setCart(cleanCart);
+            }
+          } catch {
+            // Ignore parse error
+          }
+        }
+        if (savedWishlist) {
+          try {
+            const parsed = JSON.parse(savedWishlist);
+            if (Array.isArray(parsed)) {
+              setWishlist(parsed.filter((item): item is string => typeof item === 'string'));
+            }
+          } catch {
+            // Ignore parse error
+          }
+        }
+        setMounted(true);
+      });
     } catch {
-      // Ignore storage errors
+      queueMicrotask(() => setMounted(true));
     }
-    setMounted(true);
   }, []);
 
   // Save changes to LocalStorage
@@ -53,7 +78,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     try {
       localStorage.setItem('sumaq_cart_next', JSON.stringify(cart));
     } catch {
-      // Ignore
+      // Ignore quota errors
     }
   }, [cart, mounted]);
 
@@ -62,7 +87,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     try {
       localStorage.setItem('sumaq_wishlist_next', JSON.stringify(wishlist));
     } catch {
-      // Ignore
+      // Ignore quota errors
     }
   }, [wishlist, mounted]);
 

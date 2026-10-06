@@ -1,12 +1,14 @@
 import { NextResponse } from 'next/server';
 import { getAllUserLogins } from '@/lib/db';
+import { requireAdmin } from '@/lib/guards';
+import { serverError } from '@/lib/api';
 
 export async function GET() {
+  const denied = await requireAdmin();
+  if (denied) return denied;
   try {
-    const logins = await getAllUserLogins();
-    return NextResponse.json(logins);
-  } catch (error: unknown) {
-    const msg = error instanceof Error ? error.message : 'Error obteniendo sesiones de usuario';
-    return NextResponse.json({ error: msg }, { status: 500 });
+    return NextResponse.json(await getAllUserLogins());
+  } catch (error) {
+    return serverError('admin/users GET', error);
   }
 }
