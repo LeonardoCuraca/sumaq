@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Search, X, ShoppingBag } from 'lucide-react';
 import { INITIAL_PRODUCTS, Product } from '@/lib/products-data';
 import { useCart } from '@/context/CartContext';
@@ -87,10 +88,11 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
                 className="flex items-center justify-between p-3 rounded-xl hover:bg-white/5 transition-colors gap-4"
               >
                 <div className="flex items-center gap-3 min-w-0">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
+                  <Image
                     src={item.images[0]}
                     alt={item.name}
+                    width={56}
+                    height={56}
                     className="w-14 h-14 rounded-lg object-cover bg-black border border-white/10 shrink-0"
                   />
                   <div className="min-w-0">

@@ -1,5 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { ArrowRight, Star, ShieldCheck, Zap, Award, Sparkles } from 'lucide-react';
 import { getAllProducts } from '@/lib/db';
 import { ProductCard } from '@/components/product/ProductCard';
@@ -16,11 +17,13 @@ export default async function HomePage() {
       {/* Luxury Hero Banner */}
       <section className="relative min-h-[85vh] flex items-center overflow-hidden border-b border-white/5">
         <div className="absolute inset-0 bg-gradient-to-r from-black via-black/85 to-transparent z-10" />
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+        <Image
           src="https://images.unsplash.com/photo-1560066984-138dadb4c035?w=1600&auto=format&fit=crop&q=80"
           alt="Salón de Belleza Profesional Lizze"
-          className="absolute inset-0 w-full h-full object-cover object-center filter brightness-[0.35]"
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover object-center filter brightness-[0.35]"
         />
 
         <div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-28 w-full">

@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Heart, Plus } from 'lucide-react';
 import { Product } from '@/lib/products-data';
 import { useCart } from '@/context/CartContext';
@@ -41,15 +42,15 @@ export function ProductCard({ product }: ProductCardProps) {
         href={`/producto/${product.slug}`}
         className="block relative aspect-square rounded-xl overflow-hidden bg-black/40 mb-4 group-hover:scale-[1.02] transition-transform"
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+        <Image
           src={product.images[0]}
           alt={product.name}
-          className="w-full h-full object-cover group-hover:opacity-90 transition-opacity"
-          loading="lazy"
+          fill
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+          className="object-cover group-hover:opacity-90 transition-opacity"
         />
         {product.temp !== 'N/A' && (
-          <span className="absolute bottom-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded bg-black/80 backdrop-blur-sm text-zinc-200 border border-white/10">
+          <span className="absolute bottom-2 left-2 z-10 text-[10px] font-bold px-2 py-0.5 rounded bg-black/80 backdrop-blur-sm text-zinc-200 border border-white/10">
             🔥 {product.temp}
           </span>
         )}

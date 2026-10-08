@@ -92,13 +92,13 @@ export default function CheckoutPage() {
 
       if (response.ok && data.whatsappUrl) {
         clearCart();
-        // Si el navegador bloquea la ventana emergente, navegamos en la misma pestaña.
-        const popup = window.open(data.whatsappUrl, '_blank');
-        if (popup) {
-          router.push('/');
-        } else {
-          window.location.assign(data.whatsappUrl);
+        const confirmUrl = `/pedido-confirmado?orderId=${data.orderId}&total=${data.total}&whatsapp=${encodeURIComponent(data.whatsappUrl)}`;
+        try {
+          window.open(data.whatsappUrl, '_blank');
+        } catch {
+          // Popups bloqueados no interfieren con la confirmación
         }
+        router.push(confirmUrl);
       } else {
         setFormError(data.error || 'Hubo un problema generando el pedido. Intenta nuevamente.');
       }

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Search, Heart, ShoppingBag, Menu, X, User, ShieldCheck } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
-import { whatsappUrl } from '@/lib/site';
+import { SITE, whatsappUrl } from '@/lib/site';
 import { SearchModal } from '../search/SearchModal';
 import { useSession, signOut } from 'next-auth/react';
 
@@ -52,7 +52,7 @@ export function Navbar() {
               className="hover:text-emerald-400 transition-colors flex items-center gap-1"
             >
               <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-ping"></span>
-              WhatsApp Oficial: +51 957 709 262
+              WhatsApp Oficial: +{SITE.whatsappNumber}
             </a>
           </div>
         </div>
@@ -144,18 +144,24 @@ export function Navbar() {
             {/* User Session */}
             {session ? (
               <div className="flex items-center gap-2">
-                <Link
-                  href="/admin"
-                  className="px-2.5 py-1 rounded-lg bg-sumaq-600/20 text-sumaq-400 hover:bg-sumaq-600 hover:text-white text-xs font-bold transition-colors"
-                >
-                  Admin
-                </Link>
+                {session.user?.role === 'admin' ? (
+                  <Link
+                    href="/admin"
+                    className="px-2.5 py-1 rounded-lg bg-sumaq-600/20 text-sumaq-400 hover:bg-sumaq-600 hover:text-white text-xs font-bold transition-colors"
+                  >
+                    Admin
+                  </Link>
+                ) : (
+                  <span className="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-bold">
+                    Salón Aliado
+                  </span>
+                )}
                 <span className="hidden xl:inline text-xs text-zinc-300 font-medium truncate max-w-[120px]">
                   {session.user?.name || 'Mi Cuenta'}
                 </span>
                 <button
                   onClick={() => signOut()}
-                  className="p-2 text-xs text-zinc-400 hover:text-rose-400 transition-colors"
+                  className="p-2 text-xs text-zinc-400 hover:text-rose-400 transition-colors cursor-pointer"
                   title="Cerrar sesión"
                 >
                   Salir
@@ -209,17 +215,33 @@ export function Navbar() {
             >
               Garantía y Términos Oficiales
             </Link>
-            <div className="pt-2 border-t border-white/5">
+            <div className="pt-2 border-t border-white/5 space-y-1">
               {session ? (
-                <button
-                  onClick={() => {
-                    signOut();
-                    setMobileMenuOpen(false);
-                  }}
-                  className="w-full text-left px-3 py-2 text-xs text-rose-400 font-semibold"
-                >
-                  Cerrar sesión ({session.user?.name})
-                </button>
+                <>
+                  {session.user?.role === 'admin' && (
+                    <Link
+                      href="/admin"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block px-3 py-2 text-xs text-sumaq-400 font-semibold"
+                    >
+                      Consola de Administración
+                    </Link>
+                  )}
+                  {session.user?.role === 'salon_partner' && (
+                    <div className="px-3 py-1.5 text-xs text-emerald-400 font-semibold">
+                      Perfil: Salón Aliado
+                    </div>
+                  )}
+                  <button
+                    onClick={() => {
+                      signOut();
+                      setMobileMenuOpen(false);
+                    }}
+                    className="w-full text-left px-3 py-2 text-xs text-rose-400 font-semibold cursor-pointer"
+                  >
+                    Cerrar sesión ({session.user?.name})
+                  </button>
+                </>
               ) : (
                 <Link
                   href="/login"

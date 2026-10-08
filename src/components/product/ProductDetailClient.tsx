@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { ShoppingBag, MessageCircle, Heart, Check, ChevronRight } from 'lucide-react';
 import { Product } from '@/lib/products-data';
 import { useCart } from '@/context/CartContext';
@@ -46,14 +47,16 @@ export function ProductDetailClient({ product }: { product: Product }) {
         {/* Left: Gallery */}
         <div className="lg:col-span-6 space-y-4">
           <div className="aspect-square rounded-3xl overflow-hidden bg-black/60 border border-white/10 relative">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <Image
               src={selectedImg}
               alt={product.name}
-              className="w-full h-full object-cover transition-all duration-300"
+              fill
+              priority
+              sizes="(max-width: 1024px) 100vw, 50vw"
+              className="object-cover transition-all duration-300"
             />
             {product.badge && (
-              <span className="absolute top-4 left-4 text-xs font-bold px-3 py-1 rounded-full bg-sumaq-600 text-white shadow-lg">
+              <span className="absolute top-4 left-4 z-10 text-xs font-bold px-3 py-1 rounded-full bg-sumaq-600 text-white shadow-lg">
                 {product.badge}
               </span>
             )}
@@ -65,12 +68,17 @@ export function ProductDetailClient({ product }: { product: Product }) {
                 <button
                   key={idx}
                   onClick={() => setSelectedImg(img)}
-                  className={`w-20 h-20 rounded-xl overflow-hidden border transition-all ${
+                  className={`relative w-20 h-20 rounded-xl overflow-hidden border transition-all ${
                     selectedImg === img ? 'border-sumaq-500 scale-105' : 'border-white/10 opacity-70 hover:opacity-100'
                   }`}
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={img} alt={`${product.name} miniatura ${idx}`} className="w-full h-full object-cover" />
+                  <Image
+                    src={img}
+                    alt={`${product.name} miniatura ${idx}`}
+                    fill
+                    sizes="80px"
+                    className="object-cover"
+                  />
                 </button>
               ))}
             </div>

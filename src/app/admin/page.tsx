@@ -221,24 +221,25 @@ export default function AdminConsolePage() {
 
   useEffect(() => {
     let ignore = false;
-    Promise.all([
-      fetch('/api/admin/products').then((r) => r.json()),
-      fetch('/api/admin/orders').then((r) => r.json()),
-      fetch('/api/admin/users').then((r) => r.json()),
-    ])
-      .then(([resProd, resOrders, resUsers]) => {
+    async function load() {
+      try {
+        const [resProd, resOrders, resUsers] = await Promise.all([
+          fetch('/api/admin/products').then((r) => r.json()),
+          fetch('/api/admin/orders').then((r) => r.json()),
+          fetch('/api/admin/users').then((r) => r.json()),
+        ]);
         if (!ignore) {
           if (Array.isArray(resProd)) setProducts(resProd);
           if (Array.isArray(resOrders)) setOrders(resOrders);
           if (Array.isArray(resUsers)) setUsers(resUsers);
-          setLoading(false);
         }
-      })
-      .catch((err) => {
+      } catch (err) {
         console.error('Error fetching admin data:', err);
+      } finally {
         if (!ignore) setLoading(false);
-      });
-
+      }
+    }
+    load();
     return () => {
       ignore = true;
     };
