@@ -49,46 +49,46 @@ export default function ContactPage() {
         {/* Left Info */}
         <div className="lg:col-span-5 space-y-6">
           <div>
-            <span className="text-xs font-bold text-sumaq-400 uppercase tracking-widest">
+            <span className="text-xs font-bold text-sumaq-600 uppercase tracking-widest">
               Alianzas y Soporte
             </span>
-            <h1 className="text-3xl sm:text-4xl font-black text-white mt-1">
+            <h1 className="text-3xl sm:text-4xl font-black text-slate-900 mt-1">
               Conversemos sobre nuevas oportunidades
             </h1>
           </div>
-          <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
+          <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
             Si eres marca, creador de contenido de belleza, educador capilar o salón de alto perfil
             interesado en convenios, canjes o capacitaciones conjuntas, escríbenos directamente.
           </p>
 
           <div className="space-y-4 pt-4 text-xs">
-            <div className="flex items-start gap-3 p-4 rounded-2xl bg-[#131519] border border-white/5">
-              <div className="p-2 rounded-xl bg-sumaq-600/20 text-sumaq-400 shrink-0">
+            <div className="flex items-start gap-3 p-4 rounded-2xl bg-white border border-slate-200/90 shadow-2xs">
+              <div className="p-2 rounded-xl bg-sumaq-100 text-sumaq-600 shrink-0">
                 <MapPin className="w-5 h-5" />
               </div>
               <div>
-                <p className="font-bold text-white">Almacén Central & Retiros:</p>
-                <p className="text-zinc-400">{SITE.address}</p>
+                <p className="font-bold text-slate-900">Almacén Central & Retiros:</p>
+                <p className="text-slate-600">{SITE.address}</p>
               </div>
             </div>
 
-            <div className="flex items-start gap-3 p-4 rounded-2xl bg-[#131519] border border-white/5">
-              <div className="p-2 rounded-xl bg-emerald-600/20 text-emerald-400 shrink-0">
+            <div className="flex items-start gap-3 p-4 rounded-2xl bg-white border border-slate-200/90 shadow-2xs">
+              <div className="p-2 rounded-xl bg-emerald-100 text-emerald-600 shrink-0">
                 <MessageCircle className="w-5 h-5" />
               </div>
               <div>
-                <p className="font-bold text-white">WhatsApp Asesoría Comercial:</p>
-                <p className="text-zinc-400">+{SITE.whatsappNumber} / {SITE.whatsappSecondary}</p>
+                <p className="font-bold text-slate-900">WhatsApp Asesoría Comercial:</p>
+                <p className="text-slate-600">+{SITE.whatsappNumber} / {SITE.whatsappSecondary}</p>
               </div>
             </div>
 
-            <div className="flex items-start gap-3 p-4 rounded-2xl bg-[#131519] border border-white/5">
-              <div className="p-2 rounded-xl bg-purple-600/20 text-purple-400 shrink-0">
+            <div className="flex items-start gap-3 p-4 rounded-2xl bg-white border border-slate-200/90 shadow-2xs">
+              <div className="p-2 rounded-xl bg-purple-100 text-purple-600 shrink-0">
                 <Mail className="w-5 h-5" />
               </div>
               <div>
-                <p className="font-bold text-white">Correo Oficial:</p>
-                <p className="text-zinc-400">{SITE.email}</p>
+                <p className="font-bold text-slate-900">Correo Oficial:</p>
+                <p className="text-slate-600">{SITE.email}</p>
               </div>
             </div>
           </div>
@@ -96,22 +96,22 @@ export default function ContactPage() {
 
         {/* Right Form */}
         <div className="lg:col-span-7">
-          <div className="p-8 rounded-3xl bg-[#131519] border border-white/10 shadow-xl">
-            <h2 className="text-xl font-bold text-white mb-6">
+          <div className="p-8 rounded-3xl bg-white border border-slate-200/90 shadow-xl">
+            <h2 className="text-xl font-bold text-slate-900 mb-6">
               Déjanos tu consulta o propuesta comercial
             </h2>
 
             {error && (
-              <div role="alert" className="mb-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs">
+              <div role="alert" className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium">
                 {error}
               </div>
             )}
 
             {sent ? (
               <div className="text-center py-8 space-y-3">
-                <CheckCircle className="w-12 h-12 text-emerald-400 mx-auto" />
-                <h3 className="text-lg font-bold text-white">¡Mensaje preparado!</h3>
-                <p className="text-xs text-zinc-400">
+                <CheckCircle className="w-12 h-12 text-emerald-600 mx-auto" />
+                <h3 className="text-lg font-bold text-slate-900">¡Mensaje preparado!</h3>
+                <p className="text-xs text-slate-500">
                   Redirigiendo a WhatsApp con un asesor oficial de SUMAQ...
                 </p>
               </div>
@@ -119,22 +119,22 @@ export default function ContactPage() {
               <form onSubmit={handleSubmit} className="space-y-4 text-xs">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block font-bold text-zinc-400 mb-1">Nombre Completo *</label>
+                    <label className="block font-bold text-slate-700 mb-1">Nombre Completo *</label>
                     <input
                       type="text"
                       required
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       placeholder="Tu nombre"
-                      className="w-full bg-[#181a20] border border-white/10 rounded-xl px-3.5 py-2.5 text-white focus:border-sumaq-500 focus:outline-none"
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 placeholder-slate-400 focus:border-sumaq-500 focus:outline-none"
                     />
                   </div>
                   <div>
-                    <label className="block font-bold text-zinc-400 mb-1">Motivo de Contacto</label>
+                    <label className="block font-bold text-slate-700 mb-1">Motivo de Contacto</label>
                     <select
                       value={formData.reason}
                       onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
-                      className="w-full bg-[#181a20] border border-white/10 rounded-xl px-3.5 py-2.5 text-white focus:border-sumaq-500 focus:outline-none"
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 focus:border-sumaq-500 focus:outline-none"
                     >
                       <option>Consulta de Compra / Precios</option>
                       <option>Alianzas / Canjes / Creadores</option>
@@ -146,31 +146,31 @@ export default function ContactPage() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block font-bold text-zinc-400 mb-1">Correo Electrónico *</label>
+                    <label className="block font-bold text-slate-700 mb-1">Correo Electrónico *</label>
                     <input
                       type="email"
                       required
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       placeholder="correo@ejemplo.com"
-                      className="w-full bg-[#181a20] border border-white/10 rounded-xl px-3.5 py-2.5 text-white focus:border-sumaq-500 focus:outline-none"
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 placeholder-slate-400 focus:border-sumaq-500 focus:outline-none"
                     />
                   </div>
                   <div>
-                    <label className="block font-bold text-zinc-400 mb-1">Teléfono / Celular *</label>
+                    <label className="block font-bold text-slate-700 mb-1">Teléfono / Celular *</label>
                     <input
                       type="tel"
                       required
                       value={formData.phone}
                       onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                       placeholder="+51 9..."
-                      className="w-full bg-[#181a20] border border-white/10 rounded-xl px-3.5 py-2.5 text-white focus:border-sumaq-500 focus:outline-none"
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 placeholder-slate-400 focus:border-sumaq-500 focus:outline-none"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block font-bold text-zinc-400 mb-1">
+                  <label className="block font-bold text-slate-700 mb-1">
                     Mensaje o Detalle de la Solicitud *
                   </label>
                   <textarea
@@ -179,14 +179,14 @@ export default function ContactPage() {
                     value={formData.message}
                     onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                     placeholder="Escribe aquí tu consulta..."
-                    className="w-full bg-[#181a20] border border-white/10 rounded-xl px-3.5 py-2.5 text-white focus:border-sumaq-500 focus:outline-none"
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 placeholder-slate-400 focus:border-sumaq-500 focus:outline-none"
                   />
                 </div>
 
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-3.5 rounded-xl bg-sumaq-600 hover:bg-sumaq-500 text-white font-bold tracking-wider uppercase flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50"
+                  className="w-full py-3.5 rounded-xl bg-sumaq-600 hover:bg-sumaq-500 text-white font-bold tracking-wider uppercase flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50 shadow-md shadow-sumaq-600/20"
                 >
                   <Send className="w-4 h-4" /> {loading ? 'Enviando...' : 'Enviar Mensaje a SUMAQ en WhatsApp'}
                 </button>

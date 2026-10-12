@@ -15,7 +15,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es" className="scroll-smooth">
-      <body className="bg-[#0b0c0e] text-zinc-100 min-h-screen flex flex-col antialiased selection:bg-sumaq-600 selection:text-white">
+      <body className="bg-slate-50 text-slate-800 min-h-screen flex flex-col antialiased selection:bg-sumaq-600 selection:text-white">
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>

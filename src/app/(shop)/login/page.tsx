@@ -40,19 +40,19 @@ export default function LoginPage() {
 
   return (
     <div className="py-16 max-w-md mx-auto px-4 w-full">
-      <div className="bg-[#131519] border border-white/10 rounded-3xl p-8 shadow-2xl">
+      <div className="bg-white border border-slate-200/90 rounded-3xl p-8 shadow-xl">
         <div className="text-center mb-6">
-          <div className="w-12 h-12 rounded-2xl bg-sumaq-600/20 text-sumaq-400 flex items-center justify-center mx-auto mb-3">
+          <div className="w-12 h-12 rounded-2xl bg-sumaq-50 text-sumaq-600 flex items-center justify-center mx-auto mb-3 border border-sumaq-100">
             <Lock className="w-6 h-6" />
           </div>
-          <h1 className="text-2xl font-bold text-white">Acceso Salones & Aliados</h1>
-          <p className="text-xs text-zinc-400 mt-1">
+          <h1 className="text-2xl font-bold text-slate-900">Acceso Salones & Aliados</h1>
+          <p className="text-xs text-slate-500 mt-1">
             Ingresa para acceder a tus tarifas preferenciales y pedidos
           </p>
         </div>
 
         {error && (
-          <div className="p-3 mb-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2">
+          <div className="p-3 mb-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{error}</span>
           </div>
@@ -60,7 +60,7 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
           <div>
-            <label className="block font-bold text-zinc-300 mb-1">Correo Electrónico o RUC</label>
+            <label className="block font-bold text-slate-700 mb-1">Correo Electrónico o RUC</label>
             <div className="relative">
               <input
                 type="text"
@@ -68,14 +68,14 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="salon@ejemplo.pe"
-                className="w-full bg-[#181a20] border border-white/10 rounded-xl px-3.5 py-2.5 pl-10 text-white focus:border-sumaq-500 focus:outline-none"
+                className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 pl-10 text-slate-900 placeholder-slate-400 focus:border-sumaq-500 focus:outline-none"
               />
-              <User className="w-4 h-4 text-zinc-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
             </div>
           </div>
 
           <div>
-            <label className="block font-bold text-zinc-300 mb-1">Contraseña</label>
+            <label className="block font-bold text-slate-700 mb-1">Contraseña</label>
             <div className="relative">
               <input
                 type="password"
@@ -83,23 +83,23 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full bg-[#181a20] border border-white/10 rounded-xl px-3.5 py-2.5 pl-10 text-white focus:border-sumaq-500 focus:outline-none"
+                className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 pl-10 text-slate-900 placeholder-slate-400 focus:border-sumaq-500 focus:outline-none"
               />
-              <Lock className="w-4 h-4 text-zinc-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
             </div>
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3.5 rounded-xl bg-sumaq-600 hover:bg-sumaq-500 text-white font-bold tracking-wider uppercase transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+            className="w-full py-3.5 rounded-xl bg-sumaq-600 hover:bg-sumaq-500 text-white font-bold tracking-wider uppercase transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 shadow-md shadow-sumaq-600/20"
           >
             {loading ? 'Validando...' : 'Iniciar Sesión'}
           </button>
         </form>
 
         <div className="mt-4 text-center">
-          <Link href="/trabaja-con-nosotros" className="text-xs text-sumaq-400 hover:underline">
+          <Link href="/trabaja-con-nosotros" className="text-xs text-sumaq-600 font-semibold hover:underline">
             ¿Aún no eres Salón Aliado? Solicita tu afiliación aquí
           </Link>
         </div>

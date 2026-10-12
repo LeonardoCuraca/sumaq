@@ -18,13 +18,13 @@ export default async function LineaBarberPage() {
     <div className="py-12 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       {/* Header */}
       <div className="mb-10 text-center sm:text-left">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 text-amber-400 text-xs font-bold uppercase mb-2">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-50 text-amber-700 text-xs font-bold uppercase mb-2 border border-amber-200">
           Línea Barber Lizze Brasil
         </div>
-        <h1 className="text-3xl sm:text-5xl font-black text-white">
+        <h1 className="text-3xl sm:text-5xl font-black text-slate-900">
           Herramientas de Corte y Precisión
         </h1>
-        <p className="text-sm text-zinc-400 mt-2 max-w-2xl">
+        <p className="text-sm text-slate-600 mt-2 max-w-2xl">
           Motores magnéticos y sin escobillas hasta 8500 RPM diseñados para jornadas intensivas en
           barberías. Cero calentamiento de cuchillas ni atascos.
         </p>

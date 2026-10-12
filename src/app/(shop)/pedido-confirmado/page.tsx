@@ -22,29 +22,29 @@ function PedidoConfirmadoContent() {
 
   return (
     <div className="py-16 max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div className="bg-[#131519] border border-white/10 rounded-3xl p-8 sm:p-12 shadow-2xl text-center space-y-6">
+      <div className="bg-white border border-slate-200/90 rounded-3xl p-8 sm:p-12 shadow-xl text-center space-y-6">
         {/* Animated Success Icon */}
-        <div className="w-20 h-20 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center mx-auto shadow-lg shadow-emerald-500/20">
+        <div className="w-20 h-20 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center mx-auto shadow-sm">
           <CheckCircle2 className="w-10 h-10" />
         </div>
 
         <div>
-          <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-black uppercase tracking-wider border border-emerald-500/20">
+          <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-black uppercase tracking-wider border border-emerald-200">
             ¡ORDEN REGISTRADA CON ÉXITO!
           </span>
-          <h1 className="text-3xl sm:text-4xl font-black text-white mt-3">
+          <h1 className="text-3xl sm:text-4xl font-black text-slate-900 mt-3">
             {orderId ? `Pedido #${orderId} Registrado` : 'Pedido Registrado'}
           </h1>
-          <p className="text-xs sm:text-sm text-zinc-300 mt-2 max-w-xl mx-auto leading-relaxed">
+          <p className="text-xs sm:text-sm text-slate-600 mt-2 max-w-xl mx-auto leading-relaxed">
             Hemos reservado tus herramientas en nuestro almacén central. Para completar el pago y
             coordinar el despacho o retiro, comunícate con un asesor oficial en WhatsApp.
           </p>
         </div>
 
         {total && (
-          <div className="inline-block p-4 rounded-2xl bg-black/50 border border-white/10">
-            <span className="text-xs text-zinc-400 block font-medium">Monto Total a Pagar:</span>
-            <span className="text-3xl font-black text-sumaq-400">S/ {total}</span>
+          <div className="inline-block p-4 rounded-2xl bg-slate-50 border border-slate-200">
+            <span className="text-xs text-slate-500 block font-medium">Monto Total a Pagar:</span>
+            <span className="text-3xl font-black text-sumaq-600">S/ {total}</span>
           </div>
         )}
 
@@ -54,44 +54,44 @@ function PedidoConfirmadoContent() {
             href={targetWa}
             target="_blank"
             rel="noreferrer"
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white font-black text-sm uppercase tracking-wider shadow-xl shadow-emerald-600/30 transform hover:-translate-y-0.5 transition-all"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white font-black text-sm uppercase tracking-wider shadow-lg shadow-emerald-600/20 transform hover:-translate-y-0.5 transition-all"
           >
             <MessageCircle className="w-5 h-5" />
             Abrir WhatsApp para Confirmar Despacho &rarr;
           </a>
-          <p className="text-[11px] text-zinc-500 mt-2">
+          <p className="text-[11px] text-slate-500 mt-2">
             Atención oficial directa: +{SITE.whatsappNumber} (Lunes a Sábado 8:00 am - 8:00 pm)
           </p>
         </div>
 
         {/* Step by Step instructions */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-left pt-6 border-t border-white/5">
-          <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 space-y-1">
-            <div className="flex items-center gap-2 text-xs font-bold text-white">
-              <Clock className="w-4 h-4 text-amber-400" />
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-left pt-6 border-t border-slate-100">
+          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1">
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
+              <Clock className="w-4 h-4 text-amber-600" />
               <span>1. Envía el Comprobante</span>
             </div>
-            <p className="text-[11px] text-zinc-400 leading-relaxed">
+            <p className="text-[11px] text-slate-600 leading-relaxed">
               Realiza tu abono mediante Yape, Plin o transferencia bancaria (BCP / BBVA / Interbank).
             </p>
           </div>
 
-          <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 space-y-1">
-            <div className="flex items-center gap-2 text-xs font-bold text-white">
-              <FileText className="w-4 h-4 text-sumaq-400" />
+          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1">
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
+              <FileText className="w-4 h-4 text-sumaq-600" />
               <span>2. Emisión Electrónica</span>
             </div>
-            <p className="text-[11px] text-zinc-400 leading-relaxed">
+            <p className="text-[11px] text-slate-600 leading-relaxed">
               Emitimos tu Boleta o Factura electrónica con DNI/RUC para garantía y sustento tributario.
             </p>
           </div>
 
-          <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 space-y-1">
-            <div className="flex items-center gap-2 text-xs font-bold text-white">
-              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1">
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
+              <ShieldCheck className="w-4 h-4 text-emerald-600" />
               <span>3. Despacho Inmediato</span>
             </div>
-            <p className="text-[11px] text-zinc-400 leading-relaxed">
+            <p className="text-[11px] text-slate-600 leading-relaxed">
               Despacho el mismo día en Lima o envío por agencia con código de seguimiento nacional.
             </p>
           </div>
@@ -101,7 +101,7 @@ function PedidoConfirmadoContent() {
         <div className="pt-4 flex justify-center">
           <Link
             href="/"
-            className="inline-flex items-center gap-2 text-xs font-bold text-zinc-400 hover:text-white transition-colors"
+            className="inline-flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-slate-900 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" /> Volver al Inicio
           </Link>

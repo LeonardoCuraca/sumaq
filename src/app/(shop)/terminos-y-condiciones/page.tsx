@@ -10,20 +10,20 @@ export default function TermsPage() {
   return (
     <div className="py-12 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
       <div>
-        <span className="text-xs font-bold text-sumaq-400 uppercase tracking-widest">
+        <span className="text-xs font-bold text-sumaq-600 uppercase tracking-widest">
           Documento Legal Oficial
         </span>
-        <h1 className="text-3xl sm:text-4xl font-black text-white mt-1">
+        <h1 className="text-3xl sm:text-4xl font-black text-slate-900 mt-1">
           Términos, Condiciones y Garantía Lizze
         </h1>
-        <p className="text-xs text-zinc-400 mt-2">
+        <p className="text-xs text-slate-500 mt-2">
           Actualizado y válido para todo el territorio de la República del Perú.
         </p>
       </div>
 
-      <div className="space-y-6 text-xs text-zinc-300 leading-relaxed">
-        <section className="p-6 rounded-2xl bg-[#131519] border border-white/5 space-y-2">
-          <h2 className="text-sm font-bold text-white uppercase tracking-wider">
+      <div className="space-y-6 text-xs text-slate-600 leading-relaxed">
+        <section className="p-6 rounded-2xl bg-white border border-slate-200/90 shadow-2xs space-y-2">
+          <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
             1. Sobre la Empresa y Autenticidad
           </h2>
           <p>
@@ -33,8 +33,8 @@ export default function TermsPage() {
           </p>
         </section>
 
-        <section className="p-6 rounded-2xl bg-[#131519] border border-white/5 space-y-2">
-          <h2 className="text-sm font-bold text-white uppercase tracking-wider">
+        <section className="p-6 rounded-2xl bg-white border border-slate-200/90 shadow-2xs space-y-2">
+          <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
             2. Política de Garantía Oficial (6 Meses)
           </h2>
           <p>
@@ -43,15 +43,15 @@ export default function TermsPage() {
             internos como circuitos electrónicos MCH, pantallas digitales, switches y motores
             magnéticos.
           </p>
-          <p className="text-zinc-400">
+          <p className="text-slate-500">
             Exclusiones: Daños producidos por caídas violentas, rotura de placas de titanio por impacto
             exterior, inmersión en agua o líquidos químicos, cables cortados o alteraciones por
             fluctuaciones eléctricas extremas ajenas al equipo.
           </p>
         </section>
 
-        <section className="p-6 rounded-2xl bg-[#131519] border border-white/5 space-y-2">
-          <h2 className="text-sm font-bold text-white uppercase tracking-wider">
+        <section className="p-6 rounded-2xl bg-white border border-slate-200/90 shadow-2xs space-y-2">
+          <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
             3. Envíos y Cobertura Nacional
           </h2>
           <p>
@@ -62,8 +62,8 @@ export default function TermsPage() {
           </p>
         </section>
 
-        <section className="p-6 rounded-2xl bg-[#131519] border border-white/5 space-y-2">
-          <h2 className="text-sm font-bold text-white uppercase tracking-wider">
+        <section className="p-6 rounded-2xl bg-white border border-slate-200/90 shadow-2xs space-y-2">
+          <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
             4. Medios de Pago Autorizados
           </h2>
           <p>

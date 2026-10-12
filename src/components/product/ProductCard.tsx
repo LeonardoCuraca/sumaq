@@ -18,20 +18,20 @@ export function ProductCard({ product }: ProductCardProps) {
   const isFav = isWishlisted(product.slug);
 
   return (
-    <div className="group relative bg-[#131519] border border-white/10 rounded-2xl p-4 flex flex-col justify-between hover:border-sumaq-500/50 hover:shadow-xl hover:shadow-sumaq-600/10 transition-all duration-300">
+    <div className="group relative bg-white border border-slate-200/90 rounded-2xl p-4 flex flex-col justify-between hover:border-sumaq-400 hover:shadow-xl hover:shadow-sumaq-600/5 transition-all duration-300">
       {/* Top Ribbon */}
       <div className="flex items-center justify-between gap-2 mb-3">
-        <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-sumaq-500/10 text-sumaq-400 border border-sumaq-500/20">
+        <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-sumaq-50 text-sumaq-700 border border-sumaq-200">
           {product.badge || 'Lizze Brasil'}
         </span>
         <button
           onClick={() => toggleWishlist(product.slug)}
-          className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-sumaq-400 transition-colors"
+          className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-sumaq-600 transition-colors"
           title={isFav ? 'Quitar de favoritos' : 'Guardar en favoritos'}
         >
           <Heart
             className={`w-4 h-4 transition-colors ${
-              isFav ? 'text-sumaq-500 fill-sumaq-500' : ''
+              isFav ? 'text-sumaq-600 fill-sumaq-600' : ''
             }`}
           />
         </button>
@@ -40,17 +40,17 @@ export function ProductCard({ product }: ProductCardProps) {
       {/* Image Container */}
       <Link
         href={`/producto/${product.slug}`}
-        className="block relative aspect-square rounded-xl overflow-hidden bg-black/40 mb-4 group-hover:scale-[1.02] transition-transform"
+        className="block relative aspect-square rounded-xl overflow-hidden bg-slate-100 mb-4 group-hover:scale-[1.02] transition-transform"
       >
         <Image
           src={product.images[0]}
           alt={product.name}
           fill
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-          className="object-cover group-hover:opacity-90 transition-opacity"
+          className="object-cover group-hover:opacity-95 transition-opacity"
         />
         {product.temp !== 'N/A' && (
-          <span className="absolute bottom-2 left-2 z-10 text-[10px] font-bold px-2 py-0.5 rounded bg-black/80 backdrop-blur-sm text-zinc-200 border border-white/10">
+          <span className="absolute bottom-2 left-2 z-10 text-[10px] font-bold px-2 py-0.5 rounded bg-slate-900/85 backdrop-blur-sm text-amber-300 border border-slate-700">
             🔥 {product.temp}
           </span>
         )}
@@ -61,24 +61,24 @@ export function ProductCard({ product }: ProductCardProps) {
         <div>
           <Link
             href={`/producto/${product.slug}`}
-            className="font-bold text-base text-white group-hover:text-sumaq-400 transition-colors block mb-1"
+            className="font-bold text-base text-slate-900 group-hover:text-sumaq-600 transition-colors block mb-1"
           >
             {product.name}
           </Link>
-          <p className="text-xs text-zinc-400 line-clamp-2 mb-3 leading-relaxed">
+          <p className="text-xs text-slate-500 line-clamp-2 mb-3 leading-relaxed">
             {product.punchline}
           </p>
         </div>
 
         {/* Price Matrix & Quick Buy */}
-        <div className="pt-3 border-t border-white/5 mt-auto">
+        <div className="pt-3 border-t border-slate-100 mt-auto">
           <div className="flex items-baseline justify-between mb-3">
             <div>
-              <span className="text-xs text-zinc-400 font-medium">Precio Salón:</span>
-              <div className="text-lg font-black text-white">S/ {product.prices.reg}</div>
+              <span className="text-xs text-slate-500 font-medium">Precio Salón:</span>
+              <div className="text-lg font-black text-slate-900">S/ {product.prices.reg}</div>
             </div>
             <div className="text-right">
-              <span className="text-[10px] text-emerald-400 font-bold bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-500/20">
+              <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
                 Pack Salón: S/ {product.prices.salonPack}
               </span>
             </div>
@@ -87,13 +87,13 @@ export function ProductCard({ product }: ProductCardProps) {
           <div className="grid grid-cols-2 gap-2">
             <Link
               href={`/producto/${product.slug}`}
-              className="px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-xs text-center font-semibold text-zinc-200 transition-colors"
+              className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs text-center font-semibold text-slate-700 transition-colors"
             >
               Ver Ficha
             </Link>
             <button
               onClick={() => addToCart(product)}
-              className="px-3 py-2 rounded-xl bg-sumaq-600 hover:bg-sumaq-500 text-white text-xs font-bold shadow-sm shadow-sumaq-600/30 flex items-center justify-center gap-1 transition-all active:scale-95"
+              className="px-3 py-2 rounded-xl bg-sumaq-600 hover:bg-sumaq-500 text-white text-xs font-bold shadow-sm shadow-sumaq-600/20 flex items-center justify-center gap-1 transition-all active:scale-95"
             >
               <Plus className="w-3.5 h-3.5" />
               {inCart > 0 ? `(${inCart}) Agregar` : 'Comprar'}
