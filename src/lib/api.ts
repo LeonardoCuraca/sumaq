@@ -12,6 +12,10 @@ export function badRequest(message: string) {
   return NextResponse.json({ error: message }, { status: 400 });
 }
 
+export function notFound(message = 'Recurso no encontrado') {
+  return NextResponse.json({ error: message }, { status: 404 });
+}
+
 export function tooManyRequests() {
   return NextResponse.json(
     { error: 'Demasiadas solicitudes. Espera unos minutos e inténtalo de nuevo.' },

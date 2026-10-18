@@ -3,8 +3,8 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ShoppingBag, MessageCircle, Heart, Check, ChevronRight } from 'lucide-react';
-import { Product } from '@/lib/products-data';
+import { ShoppingBag, MessageCircle, Heart, Check, ChevronRight, PackageCheck, AlertTriangle } from 'lucide-react';
+import { Product, availableStock } from '@/lib/products-data';
 import { useCart } from '@/context/CartContext';
 import { SITE } from '@/lib/site';
 
@@ -16,8 +16,12 @@ export function ProductDetailClient({ product }: { product: Product }) {
   const { cart, addToCart, toggleWishlist, isWishlisted } = useCart();
   const inCart = cart[product.slug]?.qty || 0;
   const isFav = isWishlisted(product.slug);
+  const avail = availableStock(product);
+  const isOutOfStock = avail <= 0;
+  const isLowStock = !isOutOfStock && avail <= (product.lowStockThreshold ?? 3);
 
   const handleAddToCart = () => {
+    if (isOutOfStock || inCart >= avail) return;
     addToCart(product, 1, selectedVoltage);
     setAddedAlert(true);
     setTimeout(() => setAddedAlert(false), 3000);
@@ -88,6 +92,24 @@ export function ProductDetailClient({ product }: { product: Product }) {
         {/* Right: Specs, Selector, Action */}
         <div className="lg:col-span-6 space-y-6">
           <div>
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+              {isOutOfStock ? (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 text-[11px] font-bold">
+                  Agotado Temporalmente
+                </span>
+              ) : isLowStock ? (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 text-[11px] font-bold">
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-600" /> ¡Últimas {avail} unidades disponibles!
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-bold">
+                  <PackageCheck className="w-3.5 h-3.5" /> En Stock ({avail} disponibles) • Despacho Inmediato
+                </span>
+              )}
+              {product.sku && (
+                <span className="text-[11px] text-slate-400 font-mono">SKU: {product.sku}</span>
+              )}
+            </div>
             <h1 className="text-3xl sm:text-4xl font-black text-slate-900 mb-2">{product.name}</h1>
             <p className="text-base text-sumaq-600 font-medium">{product.punchline}</p>
           </div>
@@ -165,10 +187,17 @@ export function ProductDetailClient({ product }: { product: Product }) {
           <div className="flex flex-col sm:flex-row gap-4 pt-2">
             <button
               onClick={handleAddToCart}
-              className="flex-1 py-3.5 px-6 rounded-xl bg-sumaq-600 hover:bg-sumaq-500 text-white font-bold text-sm shadow-md shadow-sumaq-600/20 flex items-center justify-center gap-2 transition-all active:scale-95"
+              disabled={isOutOfStock || inCart >= avail}
+              className="flex-1 py-3.5 px-6 rounded-xl bg-sumaq-600 hover:bg-sumaq-500 disabled:bg-slate-200 disabled:text-slate-500 disabled:shadow-none text-white font-bold text-sm shadow-md shadow-sumaq-600/20 flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer disabled:cursor-not-allowed"
             >
               <ShoppingBag className="w-5 h-5" />
-              {inCart > 0 ? `Añadir otra unidad (Tienes ${inCart})` : 'Añadir al Carrito'}
+              {isOutOfStock
+                ? 'Agotado Temporalmente'
+                : inCart >= avail
+                ? `Máximo stock en carrito (${inCart})`
+                : inCart > 0
+                ? `Añadir otra unidad (Tienes ${inCart})`
+                : 'Añadir al Carrito'}
             </button>
             <a
               href={`https://wa.me/${SITE.whatsappNumber}?text=${whatsappMessage}`}

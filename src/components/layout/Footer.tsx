@@ -102,6 +102,14 @@ export function Footer() {
                 </Link>
               </li>
               <li>
+                <Link
+                  href="/seguimiento"
+                  className="hover:text-sumaq-600 font-semibold text-slate-900 transition-colors"
+                >
+                  Seguimiento de Pedido
+                </Link>
+              </li>
+              <li>
                 <Link href="/terminos-y-condiciones" className="hover:text-sumaq-600 transition-colors">
                   Términos, Envíos y Garantía
                 </Link>

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { ORDER_STATUSES } from './db';
+import { ORDER_STATUSES, PAYMENT_STATUSES } from './db';
 
 const text = (max: number) => z.string().trim().max(max);
 const required = (max: number) => text(max).min(1);
@@ -42,12 +42,27 @@ export const productInputSchema = z.object({
   shortDesc: text(2000).optional().default(''),
   longDesc: text(8000).optional().default(''),
   isFeatured: z.boolean().optional().default(false),
+  stock: z.coerce.number().int().min(0).max(100000).optional().default(25),
+  lowStockThreshold: z.coerce.number().int().min(0).max(1000).optional().default(3),
+  sku: text(100).optional().default(''),
+  trackInventory: z.boolean().optional().default(true),
 });
 export type ProductInput = z.infer<typeof productInputSchema>;
 
 export const orderStatusSchema = z.object({
   orderId: z.coerce.number().int().positive(),
-  status: z.enum(ORDER_STATUSES),
+  status: z.enum(ORDER_STATUSES).optional(),
+  paymentStatus: z.enum(PAYMENT_STATUSES).optional(),
+  shippingCarrier: text(100).optional(),
+  trackingCode: text(100).optional(),
+  adminNotes: text(2000).optional(),
+});
+
+export const stockAdjustmentSchema = z.object({
+  productId: required(100),
+  delta: z.coerce.number().int().min(-10000).max(10000).refine((n) => n !== 0, 'El ajuste no puede ser 0'),
+  movementType: z.enum(['manual_adjustment', 'restock', 'return']).default('manual_adjustment'),
+  reason: required(300),
 });
 
 export const quoteSchema = z.object({
@@ -69,8 +84,11 @@ export const orderSchema = quoteSchema.extend({
   fullName: required(150),
   dniRuc: z.string().trim().regex(/^(\d{8}|\d{11})$/, 'DNI (8 dígitos) o RUC (11 dígitos)'),
   phone: z.string().trim().regex(/^\+?[\d\s-]{7,20}$/, 'Teléfono inválido'),
+  email: z.string().trim().email('Correo electrónico inválido').max(255).optional().or(z.literal('')),
+  invoiceType: z.enum(['boleta', 'factura']).default('boleta'),
   address: text(300).optional().default(''),
-  paymentMethod: text(50).default('Yape / Plin'),
+  paymentMethod: text(80).default('Mercado Pago'),
+  paymentGateway: z.enum(['mercadopago', 'manual_whatsapp']).optional(),
 });
 
 export const leadSchema = z.object({

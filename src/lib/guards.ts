@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from './auth';
 
-export type SessionUser = { id?: string; email?: string | null; role?: string };
+export type SessionUser = { id?: string; name?: string | null; email?: string | null; role?: string };
 
 /** Devuelve el usuario con sesión o null. */
 export async function getSessionUser(): Promise<SessionUser | null> {

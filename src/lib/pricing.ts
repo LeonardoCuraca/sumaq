@@ -39,11 +39,29 @@ export class QuoteError extends Error {}
 export function buildQuote(input: QuoteInput, products: Product[], role: Role): Quote {
   const byId = new Map(products.map((p) => [p.id, p]));
   const merged = new Map<string, { qty: number; voltage?: string }>();
+  const qtyByProductId = new Map<string, number>();
 
   for (const it of input.items) {
     const key = `${it.id}|${it.voltage ?? ''}`;
     const prev = merged.get(key);
     merged.set(key, { qty: (prev?.qty ?? 0) + it.qty, voltage: it.voltage });
+    qtyByProductId.set(it.id, (qtyByProductId.get(it.id) ?? 0) + it.qty);
+  }
+
+  for (const [productId, totalQty] of qtyByProductId) {
+    const product = byId.get(productId);
+    if (!product) throw new QuoteError(`Producto no disponible: ${productId}`);
+    if (product.trackInventory !== false && typeof product.stock === 'number') {
+      const available = Math.max(0, product.stock - (product.reservedStock ?? 0));
+      if (available <= 0) {
+        throw new QuoteError(`El producto "${product.name}" se encuentra agotado temporalmente.`);
+      }
+      if (totalQty > available) {
+        throw new QuoteError(
+          `Stock insuficiente para "${product.name}". Disponible: ${available} unidad(es).`
+        );
+      }
+    }
   }
 
   const items: OrderItem[] = [];
