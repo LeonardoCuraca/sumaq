@@ -3,8 +3,8 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Heart, Plus } from 'lucide-react';
-import { Product } from '@/lib/products-data';
+import { Heart, Plus, AlertTriangle } from 'lucide-react';
+import { Product, availableStock } from '@/lib/products-data';
 import { useCart } from '@/context/CartContext';
 
 interface ProductCardProps {
@@ -16,6 +16,9 @@ export function ProductCard({ product }: ProductCardProps) {
   const { cart, addToCart, toggleWishlist, isWishlisted } = useCart();
   const inCart = cart[product.slug]?.qty || 0;
   const isFav = isWishlisted(product.slug);
+  const avail = availableStock(product);
+  const isOutOfStock = avail <= 0;
+  const isLowStock = !isOutOfStock && avail <= (product.lowStockThreshold ?? 3);
 
   return (
     <div className="group relative bg-white border border-slate-200/90 rounded-2xl p-4 flex flex-col justify-between hover:border-sumaq-400 hover:shadow-xl hover:shadow-sumaq-600/5 transition-all duration-300">
@@ -47,13 +50,22 @@ export function ProductCard({ product }: ProductCardProps) {
           alt={product.name}
           fill
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-          className="object-cover group-hover:opacity-95 transition-opacity"
+          className={`object-cover group-hover:opacity-95 transition-opacity ${isOutOfStock ? 'grayscale opacity-60' : ''}`}
         />
         {product.temp !== 'N/A' && (
           <span className="absolute bottom-2 left-2 z-10 text-[10px] font-bold px-2 py-0.5 rounded bg-slate-900/85 backdrop-blur-sm text-amber-300 border border-slate-700">
             🔥 {product.temp}
           </span>
         )}
+        {isOutOfStock ? (
+          <span className="absolute top-2 right-2 z-10 text-[10px] font-black uppercase px-2 py-0.5 rounded bg-rose-600 text-white shadow-sm">
+            Agotado
+          </span>
+        ) : isLowStock ? (
+          <span className="absolute top-2 right-2 z-10 text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500 text-slate-950 flex items-center gap-1 shadow-sm">
+            <AlertTriangle className="w-3 h-3" /> ¡Últimas {avail}!
+          </span>
+        ) : null}
       </Link>
 
       {/* Title & Details */}
@@ -93,10 +105,17 @@ export function ProductCard({ product }: ProductCardProps) {
             </Link>
             <button
               onClick={() => addToCart(product)}
-              className="px-3 py-2 rounded-xl bg-sumaq-600 hover:bg-sumaq-500 text-white text-xs font-bold shadow-sm shadow-sumaq-600/20 flex items-center justify-center gap-1 transition-all active:scale-95"
+              disabled={isOutOfStock || inCart >= avail}
+              className="px-3 py-2 rounded-xl bg-sumaq-600 hover:bg-sumaq-500 disabled:bg-slate-200 disabled:text-slate-500 disabled:shadow-none text-white text-xs font-bold shadow-sm shadow-sumaq-600/20 flex items-center justify-center gap-1 transition-all active:scale-95 cursor-pointer disabled:cursor-not-allowed"
             >
-              <Plus className="w-3.5 h-3.5" />
-              {inCart > 0 ? `(${inCart}) Agregar` : 'Comprar'}
+              {isOutOfStock ? (
+                'Sin Stock'
+              ) : (
+                <>
+                  <Plus className="w-3.5 h-3.5" />
+                  {inCart > 0 ? `(${inCart}) Agregar` : 'Comprar'}
+                </>
+              )}
             </button>
           </div>
         </div>

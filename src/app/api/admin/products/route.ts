@@ -60,6 +60,10 @@ export async function POST(request: Request) {
       shortDesc: input.shortDesc,
       longDesc: input.longDesc,
       isFeatured: input.isFeatured,
+      stock: input.stock,
+      lowStockThreshold: input.lowStockThreshold,
+      sku: input.sku || `LZ-${slug.toUpperCase().slice(0, 18)}`,
+      trackInventory: input.trackInventory,
     };
 
     try {

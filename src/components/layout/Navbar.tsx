@@ -21,6 +21,7 @@ export function Navbar() {
     { name: 'Línea Hair', href: '/linea-hair', badge: 'bg-sumaq-500' },
     { name: 'Línea Barber', href: '/linea-barber', badge: 'bg-amber-500' },
     { name: 'Club Salones', href: '/trabaja-con-nosotros', highlight: true },
+    { name: 'Seguimiento', href: '/seguimiento' },
     { name: 'Nosotros', href: '/nosotros' },
     { name: 'Contacto', href: '/contactanos' },
   ];
@@ -37,6 +38,13 @@ export function Navbar() {
             <span>Precios mayoristas y atención directa para salones de belleza y barberías</span>
           </div>
           <div className="flex items-center gap-4 text-slate-400 text-xs">
+            <Link
+              href="/seguimiento"
+              className="hover:text-sumaq-300 transition-colors flex items-center gap-1 font-semibold text-slate-200"
+            >
+              Rastrear Pedido
+            </Link>
+            <span className="text-slate-600">|</span>
             <Link
               href="/trabaja-con-nosotros"
               className="hover:text-sumaq-300 transition-colors flex items-center gap-1 font-semibold text-slate-200"

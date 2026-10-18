@@ -102,4 +102,57 @@ describe('pricing unit tests', () => {
       )
     ).toThrow(QuoteError);
   });
+
+  it('throws QuoteError when product is out of stock or requested qty exceeds available stock', () => {
+    const limitedProduct: Product = {
+      ...mockProduct,
+      stock: 5,
+      reservedStock: 3, // available = 2
+      trackInventory: true,
+    };
+
+    // Requesting 2 should succeed
+    const okQuote = buildQuote(
+      {
+        items: [{ id: 'plancha-test', qty: 2, voltage: '220V' }],
+        deliveryType: 'domicilio',
+        city: 'Lima',
+      },
+      [limitedProduct],
+      null
+    );
+    expect(okQuote.items[0].qty).toBe(2);
+
+    // Requesting 3 should fail due to reserved stock
+    expect(() =>
+      buildQuote(
+        {
+          items: [{ id: 'plancha-test', qty: 3, voltage: '220V' }],
+          deliveryType: 'domicilio',
+          city: 'Lima',
+        },
+        [limitedProduct],
+        null
+      )
+    ).toThrow(QuoteError);
+
+    // Completely out of stock product
+    const depletedProduct: Product = {
+      ...mockProduct,
+      stock: 2,
+      reservedStock: 2,
+      trackInventory: true,
+    };
+    expect(() =>
+      buildQuote(
+        {
+          items: [{ id: 'plancha-test', qty: 1, voltage: '220V' }],
+          deliveryType: 'domicilio',
+          city: 'Lima',
+        },
+        [depletedProduct],
+        null
+      )
+    ).toThrow(QuoteError);
+  });
 });

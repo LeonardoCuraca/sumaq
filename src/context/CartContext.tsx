@@ -92,9 +92,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, [wishlist, mounted]);
 
   const addToCart = (product: Product, qty = 1, voltage = '220V', option = '') => {
+    const maxAvail =
+      product.trackInventory === false
+        ? 50
+        : Math.max(0, (typeof product.stock === 'number' ? product.stock : 25) - (product.reservedStock ?? 0));
+    if (maxAvail <= 0) return;
+
     setCart((prev) => {
       const existing = prev[product.slug];
-      const newQty = existing ? existing.qty + qty : qty;
+      const newQty = Math.min(maxAvail, existing ? existing.qty + qty : qty);
       return {
         ...prev,
         [product.slug]: {
@@ -111,7 +117,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setCart((prev) => {
       const item = prev[slug];
       if (!item) return prev;
-      const nextQty = item.qty + delta;
+      const maxAvail =
+        item.product.trackInventory === false
+          ? 50
+          : Math.max(
+              1,
+              (typeof item.product.stock === 'number' ? item.product.stock : 25) - (item.product.reservedStock ?? 0)
+            );
+      const nextQty = Math.min(maxAvail, item.qty + delta);
       if (nextQty <= 0) {
         const copy = { ...prev };
         delete copy[slug];

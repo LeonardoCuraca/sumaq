@@ -18,6 +18,18 @@ export interface Product {
   shortDesc: string;
   longDesc: string;
   isFeatured?: boolean;
+  stock?: number;
+  reservedStock?: number;
+  lowStockThreshold?: number;
+  sku?: string;
+  trackInventory?: boolean;
+}
+
+export function availableStock(product: Pick<Product, 'stock' | 'reservedStock' | 'trackInventory'>): number {
+  if (product.trackInventory === false) return 999;
+  const physical = typeof product.stock === 'number' ? product.stock : 25;
+  const reserved = typeof product.reservedStock === 'number' ? product.reservedStock : 0;
+  return Math.max(0, physical - reserved);
 }
 
 export const INITIAL_PRODUCTS: Product[] = [

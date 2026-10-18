@@ -14,11 +14,14 @@ if (count > 0) {
 }
 
 for (const p of INITIAL_PRODUCTS) {
+  const sku = p.sku || `LZ-${p.id.toUpperCase()}`;
+  const stock = typeof p.stock === 'number' ? p.stock : 25;
   await sql`
-    INSERT INTO products (id, slug, category, name, badge, punchline, temp, voltage, options, prices, images, specs, short_desc, long_desc, is_featured)
+    INSERT INTO products (id, slug, category, name, badge, punchline, temp, voltage, options, prices, images, specs, short_desc, long_desc, is_featured, stock, reserved_stock, low_stock_threshold, sku, track_inventory)
     VALUES (${p.id}, ${p.slug}, ${p.category}, ${p.name}, ${p.badge || null}, ${p.punchline}, ${p.temp},
       ${JSON.stringify(p.voltage)}, ${JSON.stringify(p.options || [])}, ${JSON.stringify(p.prices)},
-      ${JSON.stringify(p.images)}, ${JSON.stringify(p.specs)}, ${p.shortDesc}, ${p.longDesc}, ${p.isFeatured || false})
+      ${JSON.stringify(p.images)}, ${JSON.stringify(p.specs)}, ${p.shortDesc}, ${p.longDesc}, ${p.isFeatured || false},
+      ${stock}, 0, ${p.lowStockThreshold ?? 3}, ${sku}, ${p.trackInventory ?? true})
     ON CONFLICT (slug) DO NOTHING`;
 }
 console.log(`Insertados ${INITIAL_PRODUCTS.length} productos.`);

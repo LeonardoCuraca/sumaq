@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { slugify, orderSchema, leadSchema } from './validation';
+import {
+  slugify,
+  orderSchema,
+  leadSchema,
+  orderStatusSchema,
+  stockAdjustmentSchema,
+} from './validation';
 
 describe('validation logic and schemas', () => {
   it('slugify cleans accents, special characters, and trims dashes', () => {
@@ -8,25 +14,60 @@ describe('validation logic and schemas', () => {
     expect(slugify('Máquina de Barbería & Accesorios')).toBe('maquina_de_barberia_accesorios');
   });
 
-  it('orderSchema validates DNI (8 digits) and RUC (11 digits)', () => {
+  it('orderSchema validates DNI (8 digits), RUC (11 digits), invoiceType and paymentGateway', () => {
     const baseOrder = {
       fullName: 'Juan Perez',
       phone: '957709262',
+      email: 'juan@salon.pe',
+      invoiceType: 'boleta',
       deliveryType: 'domicilio',
       city: 'Lima',
       address: 'Av. Brasil 1234',
-      paymentMethod: 'Yape / Plin',
+      paymentMethod: 'Mercado Pago',
+      paymentGateway: 'mercadopago',
       items: [{ id: 'prod-1', qty: 1 }],
     };
 
     // 8 digits DNI
     expect(orderSchema.safeParse({ ...baseOrder, dniRuc: '71234567' }).success).toBe(true);
-    // 11 digits RUC
-    expect(orderSchema.safeParse({ ...baseOrder, dniRuc: '20601234567' }).success).toBe(true);
+    // 11 digits RUC with factura
+    expect(
+      orderSchema.safeParse({ ...baseOrder, dniRuc: '20601234567', invoiceType: 'factura' }).success
+    ).toBe(true);
 
     // Invalid docs
     expect(orderSchema.safeParse({ ...baseOrder, dniRuc: '123' }).success).toBe(false);
     expect(orderSchema.safeParse({ ...baseOrder, dniRuc: 'letras1234' }).success).toBe(false);
+  });
+
+  it('orderStatusSchema and stockAdjustmentSchema validate admin operations', () => {
+    expect(
+      orderStatusSchema.safeParse({
+        orderId: 10,
+        status: 'en_despacho',
+        paymentStatus: 'paid',
+        shippingCarrier: 'Shalom',
+        trackingCode: 'SHM-999',
+      }).success
+    ).toBe(true);
+
+    expect(
+      stockAdjustmentSchema.safeParse({
+        productId: 'plancha-lizze-extreme',
+        delta: 10,
+        movementType: 'restock',
+        reason: 'Importación Brasil',
+      }).success
+    ).toBe(true);
+
+    expect(
+      stockAdjustmentSchema.safeParse({
+        productId: 'plancha-lizze-extreme',
+        delta: 0, // delta cannot be 0
+        movementType: 'restock',
+        reason: 'Importación Brasil',
+      }).success
+    ).toBe(false);
   });
 
   it('leadSchema requires all mandatory contact fields', () => {
