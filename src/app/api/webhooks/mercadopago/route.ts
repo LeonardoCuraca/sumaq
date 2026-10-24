@@ -9,13 +9,14 @@ import {
 import {
   fetchMercadoPagoPayment,
   getMpConfigStatus,
+  getMpWebhookSecret,
   verifyMercadoPagoWebhookSignature,
 } from '@/lib/mercadopago';
 
 /**
  * Webhook receptor oficial de Mercado Pago (IPN / Webhooks v2).
  * Cumple estándares de la industria:
- * 1. Validación criptográfica HMAC-SHA256 de `x-signature` (cuando MP_WEBHOOK_SECRET está definido).
+ * 1. Validación criptográfica HMAC-SHA256 de `x-signature` (cuando MP_WEBHOOK_SECRET / MERCADOPAGO_WEBHOOK_SECRET está definido).
  * 2. Registro en base de datos (`webhook_events`) para auditoría e idempotencia.
  * 3. Verificación Zero-Trust consultando directamente la API de Mercado Pago (`GET /v1/payments/{id}`).
  * 4. Validación de integridad del monto cobrado (`amount >= order.total`) y moneda (`PEN`).
@@ -37,7 +38,6 @@ export async function POST(request: Request) {
       body = {};
     }
 
-    // Extraer topic y data.id tanto de query params como del body JSON (Mercado Pago usa ambos formatos)
     const topic = String(
       body.type || body.topic || url.searchParams.get('type') || url.searchParams.get('topic') || 'unknown'
     );
@@ -51,7 +51,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ received: true, ignored: 'missing_resource_id' }, { status: 200 });
     }
 
-    const hasSecret = Boolean(process.env.MP_WEBHOOK_SECRET?.trim());
+    const hasSecret = Boolean(getMpWebhookSecret());
     const signatureValid = hasSecret
       ? verifyMercadoPagoWebhookSignature({
           xSignature,
@@ -70,13 +70,11 @@ export async function POST(request: Request) {
       payload: body,
     });
 
-    // Si MP_WEBHOOK_SECRET está configurado y la firma no es válida, rechazamos con 401
     if (hasSecret && !signatureValid) {
       await updateWebhookEventStatus(webhookLogId, 'failed', 'Firma HMAC x-signature inválida');
       return NextResponse.json({ error: 'Invalid webhook signature' }, { status: 401 });
     }
 
-    // Solo procesamos eventos de pagos
     if (topic !== 'payment' && !topic.includes('payment')) {
       await updateWebhookEventStatus(webhookLogId, 'ignored', `Topic no requiere acción: ${topic}`);
       return NextResponse.json({ received: true, ignored: topic }, { status: 200 });
@@ -88,7 +86,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'MP not configured' }, { status: 503 });
     }
 
-    // Consultar la verdad directamente en la API de Mercado Pago
     const verifiedPayment = await fetchMercadoPagoPayment(resourceId);
     if (!verifiedPayment.orderId) {
       await updateWebhookEventStatus(
@@ -109,7 +106,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ received: true, error: 'order_not_found' }, { status: 200 });
     }
 
-    // Validación antifraude de integridad de monto y moneda para pagos aprobados
     if (verifiedPayment.status === 'approved') {
       const expectedTotal = Number(order.total);
       const paidAmount = Number(verifiedPayment.amount);

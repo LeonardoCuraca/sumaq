@@ -3,17 +3,24 @@ import crypto from 'node:crypto';
 import { verifyMercadoPagoWebhookSignature } from './mercadopago';
 
 describe('Mercado Pago HMAC-SHA256 webhook signature verification', () => {
-  const originalSecret = process.env.MP_WEBHOOK_SECRET;
+  const originalMpSecret = process.env.MP_WEBHOOK_SECRET;
+  const originalMercadoPagoSecret = process.env.MERCADOPAGO_WEBHOOK_SECRET;
 
   beforeEach(() => {
+    delete process.env.MERCADOPAGO_WEBHOOK_SECRET;
     process.env.MP_WEBHOOK_SECRET = 'test_mp_webhook_secret_2026';
   });
 
   afterEach(() => {
-    if (originalSecret === undefined) {
+    if (originalMpSecret === undefined) {
       delete process.env.MP_WEBHOOK_SECRET;
     } else {
-      process.env.MP_WEBHOOK_SECRET = originalSecret;
+      process.env.MP_WEBHOOK_SECRET = originalMpSecret;
+    }
+    if (originalMercadoPagoSecret === undefined) {
+      delete process.env.MERCADOPAGO_WEBHOOK_SECRET;
+    } else {
+      process.env.MERCADOPAGO_WEBHOOK_SECRET = originalMercadoPagoSecret;
     }
   });
 

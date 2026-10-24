@@ -10,14 +10,30 @@ export interface MpConfigStatus {
 }
 
 export function getMpAccessToken(): string | null {
-  const token = process.env.MP_ACCESS_TOKEN?.trim();
+  const token = (
+    process.env.MERCADOPAGO_ACCESS_TOKEN ||
+    process.env.MP_ACCESS_TOKEN
+  )?.trim();
   return token && token.length > 10 ? token : null;
+}
+
+export function getMpWebhookSecret(): string | null {
+  const secret = (
+    process.env.MERCADOPAGO_WEBHOOK_SECRET ||
+    process.env.MP_WEBHOOK_SECRET
+  )?.trim();
+  return secret && secret.length > 5 ? secret : null;
 }
 
 export function getMpConfigStatus(): MpConfigStatus {
   const token = getMpAccessToken();
-  const publicKey = process.env.NEXT_PUBLIC_MP_PUBLIC_KEY?.trim() || null;
-  const hasWebhookSecret = Boolean(process.env.MP_WEBHOOK_SECRET?.trim());
+  const publicKey =
+    (
+      process.env.NEXT_PUBLIC_MP_PUBLIC_KEY ||
+      process.env.NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY ||
+      process.env.MERCADOPAGO_PUBLIC_KEY
+    )?.trim() || null;
+  const hasWebhookSecret = Boolean(getMpWebhookSecret());
   if (!token) {
     return { configured: false, hasWebhookSecret, mode: 'unconfigured', publicKey };
   }
@@ -33,7 +49,7 @@ export function getMpConfigStatus(): MpConfigStatus {
 function getMpClient(): MercadoPagoConfig {
   const accessToken = getMpAccessToken();
   if (!accessToken) {
-    throw new Error('MP_ACCESS_TOKEN no está configurado en las variables de entorno.');
+    throw new Error('MP_ACCESS_TOKEN / MERCADOPAGO_ACCESS_TOKEN no está configurado en las variables de entorno.');
   }
   return new MercadoPagoConfig({
     accessToken,
@@ -70,7 +86,11 @@ export async function createMercadoPagoPreference(
 ): Promise<CreatedPreferenceResult> {
   const client = getMpClient();
   const preference = new Preference(client);
-  const baseUrl = (input.baseUrl || process.env.NEXT_PUBLIC_SITE_URL || 'https://sumaq.pe').replace(/\/$/, '');
+  const baseUrl = (
+    input.baseUrl ||
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    'https://sumaq-tau.vercel.app'
+  ).replace(/\/$/, '');
 
   const mpItems = input.items.map((item) => ({
     id: item.id,
@@ -273,9 +293,7 @@ export function verifyMercadoPagoWebhookSignature(params: {
   dataId: string | null;
   secret?: string | null;
 }): boolean {
-  const secret = (params.secret ?? process.env.MP_WEBHOOK_SECRET)?.trim();
-  // Si no hay MP_WEBHOOK_SECRET configurado, devolvemos false pero el caller puede decidir
-  // si igual verifica contra la API de MP (Zero-Trust). Si hay secret, debe coincidir exactamente.
+  const secret = (params.secret ?? getMpWebhookSecret())?.trim();
   if (!secret) return false;
   if (!params.xSignature || !params.dataId) return false;
 
