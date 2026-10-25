@@ -3,14 +3,15 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { ArrowRight, Star, ShieldCheck, Zap, Award, Sparkles } from 'lucide-react';
 import { getAllProducts } from '@/lib/db';
+import { availableStock } from '@/lib/products-data';
 import { ProductCard } from '@/components/product/ProductCard';
 
 export const revalidate = 3600;
 
 export default async function HomePage() {
   const products = await getAllProducts();
-  const hairProducts = products.filter((p) => p.category === 'hair').slice(0, 4);
-  const barberProducts = products.filter((p) => p.category === 'barber');
+  const hairProducts = products.filter((p) => p.category === 'hair' && availableStock(p) > 0);
+  const barberProducts = products.filter((p) => p.category === 'barber' && availableStock(p) > 0);
 
   return (
     <div>
@@ -42,8 +43,8 @@ export default async function HomePage() {
 
             <p className="text-base sm:text-lg text-slate-200 leading-relaxed max-w-xl">
               Alisa en la mitad de pasadas y garantiza un brillo espejo insuperable. Planchas de
-              titanio hasta 250°C, secadores de alto torque y barbería profesional con garantía
-              oficial y servicio técnico en Perú.
+              titanio hasta 252°C, secadoras de alto torque, tenazas y fototerapia capilar con
+              garantía oficial y servicio técnico en Perú.
             </p>
 
             {/* CTAs */}
@@ -70,7 +71,7 @@ export default async function HomePage() {
                 <p className="text-xs text-slate-300">Salones equipados</p>
               </div>
               <div>
-                <p className="text-2xl sm:text-3xl font-black text-rose-300">250°C</p>
+                <p className="text-2xl sm:text-3xl font-black text-rose-300">252°C</p>
                 <p className="text-xs text-slate-300">Calor ultraestable</p>
               </div>
               <div>
@@ -137,30 +138,34 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Línea Hair Section */}
-      <section className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
-          <div>
-            <div className="flex items-center gap-2 text-sumaq-600 text-xs font-bold uppercase tracking-wider mb-2">
-              <span className="w-2 h-2 rounded-full bg-sumaq-500" />
-              Especialidad en Keratinas, Botox y Alisados
+      {/* Línea Hair Section (Solo se muestra si la línea tiene stock disponible) */}
+      {hairProducts.length > 0 && (
+        <section className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
+            <div>
+              <div className="flex items-center gap-2 text-sumaq-600 text-xs font-bold uppercase tracking-wider mb-2">
+                <span className="w-2 h-2 rounded-full bg-sumaq-500" />
+                Especialidad en Keratinas, Botox y Alisados
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-black text-slate-900">
+                Línea Hair Profesional
+              </h2>
             </div>
-            <h2 className="text-3xl sm:text-4xl font-black text-slate-900">Línea Hair Profesional</h2>
+            <Link
+              href="/linea-hair"
+              className="inline-flex items-center gap-2 text-sm font-bold text-sumaq-600 hover:text-sumaq-700"
+            >
+              Ver catálogo completo ({hairProducts.length} equipos) <ArrowRight className="w-4 h-4" />
+            </Link>
           </div>
-          <Link
-            href="/linea-hair"
-            className="inline-flex items-center gap-2 text-sm font-bold text-sumaq-600 hover:text-sumaq-700"
-          >
-            Ver todos los equipos de alisado <ArrowRight className="w-4 h-4" />
-          </Link>
-        </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {hairProducts.map((p) => (
-            <ProductCard key={p.id} product={p} />
-          ))}
-        </div>
-      </section>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {hairProducts.map((p) => (
+              <ProductCard key={p.id} product={p} />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* B2B Club Salones Banner */}
       <section className="my-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -196,30 +201,32 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Línea Barber Section */}
-      <section className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
-          <div>
-            <div className="flex items-center gap-2 text-amber-600 text-xs font-bold uppercase tracking-wider mb-2">
-              <span className="w-2 h-2 rounded-full bg-amber-500" />
-              Precisión de 8500 RPM para Barberías
+      {/* Línea Barber Section (Desaparece automáticamente cuando no hay stock en la línea Barber) */}
+      {barberProducts.length > 0 && (
+        <section className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
+            <div>
+              <div className="flex items-center gap-2 text-amber-600 text-xs font-bold uppercase tracking-wider mb-2">
+                <span className="w-2 h-2 rounded-full bg-amber-500" />
+                Precisión de 8500 RPM para Barberías
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-black text-slate-900">Línea Barber Pro</h2>
             </div>
-            <h2 className="text-3xl sm:text-4xl font-black text-slate-900">Línea Barber Pro</h2>
+            <Link
+              href="/linea-barber"
+              className="inline-flex items-center gap-2 text-sm font-bold text-amber-600 hover:text-amber-700"
+            >
+              Ver máquinas de corte Lizze Barber <ArrowRight className="w-4 h-4" />
+            </Link>
           </div>
-          <Link
-            href="/linea-barber"
-            className="inline-flex items-center gap-2 text-sm font-bold text-amber-600 hover:text-amber-700"
-          >
-            Ver máquinas de corte Lizze Barber <ArrowRight className="w-4 h-4" />
-          </Link>
-        </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {barberProducts.map((p) => (
-            <ProductCard key={p.id} product={p} accent="amber" />
-          ))}
-        </div>
-      </section>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {barberProducts.map((p) => (
+              <ProductCard key={p.id} product={p} accent="amber" />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Testimonials */}
       <section className="py-20 bg-white border-t border-slate-200">
@@ -253,17 +260,17 @@ export default async function HomePage() {
 
             <div className="p-6 rounded-2xl bg-slate-50 border border-slate-200/90 flex flex-col justify-between shadow-xs hover:shadow-md transition-shadow">
               <p className="text-xs text-slate-600 leading-relaxed italic mb-6">
-                &quot;El Clipper magnético y el Shaver de Lizze son unas bestias. No se calientan para
-                nada en jornadas continuas y los fades salen súper limpios sin irritar la piel del
-                cliente.&quot;
+                &quot;La Plancha Lizze Supreme y la Secadora Lizze Extreme cambiaron por completo el
+                ritmo de nuestro salón. Sellamos tratamientos de botox y keratina en la mitad del
+                tiempo y con brillo espejo.&quot;
               </p>
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-amber-100 text-amber-700 font-bold flex items-center justify-center">
-                  CB
+                  CP
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-slate-900">Carlos &apos;Fade&apos; Barreto</p>
-                  <p className="text-[10px] text-slate-500">Owner, San Borja Barber Studio</p>
+                  <p className="text-xs font-bold text-slate-900">Camila Paredes</p>
+                  <p className="text-[10px] text-slate-500">Directora, San Borja Hair Studio</p>
                 </div>
               </div>
             </div>

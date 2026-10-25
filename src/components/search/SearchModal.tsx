@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Search, X, ShoppingBag } from 'lucide-react';
-import { INITIAL_PRODUCTS, Product } from '@/lib/products-data';
+import { INITIAL_PRODUCTS, Product, availableStock, categoryHasStock } from '@/lib/products-data';
 import { useCart } from '@/context/CartContext';
 import { whatsappUrl } from '@/lib/site';
 
@@ -30,8 +30,12 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
 
   if (!isOpen) return null;
 
+  const activeCatalog = catalog.filter(
+    (p) => categoryHasStock(catalog, p.category) && availableStock(p) > 0
+  );
+
   const filtered = query.trim()
-    ? catalog.filter(
+    ? activeCatalog.filter(
         (p) =>
           p.name.toLowerCase().includes(query.toLowerCase()) ||
           p.punchline.toLowerCase().includes(query.toLowerCase()) ||
@@ -48,13 +52,13 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Busca planchas, secadoras, trimmer, fotón, repuestos..."
+            placeholder="Busca plancha supreme, secadora hipersonic, tenaza, photon, cepillos..."
             autoFocus
             className="w-full bg-transparent border-none text-slate-900 text-base focus:outline-none placeholder-slate-400 font-medium"
           />
           <button
             onClick={onClose}
-            className="p-1 rounded-lg text-slate-400 hover:text-slate-700"
+            className="p-1 rounded-lg text-slate-400 hover:text-slate-700 cursor-pointer"
             title="Cerrar"
           >
             <X className="w-5 h-5" />
@@ -64,12 +68,12 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
         <div className="max-h-96 overflow-y-auto p-4 space-y-2">
           {query.trim() === '' ? (
             <p className="text-xs text-slate-500 text-center py-6">
-              Escribe el nombre de la herramienta o línea que necesitas.
+              Escribe el nombre de la herramienta Lizze que necesitas.
             </p>
           ) : filtered.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-slate-600 text-sm">
-                No encontramos herramientas con el término &quot;
+                No encontramos herramientas disponibles con el término &quot;
                 <span className="text-slate-900 font-bold">{query}</span>&quot;
               </p>
               <a
@@ -93,7 +97,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
                     alt={item.name}
                     width={56}
                     height={56}
-                    className="w-14 h-14 rounded-lg object-cover bg-slate-100 border border-slate-200 shrink-0"
+                    className="w-14 h-14 rounded-lg object-contain p-1 bg-white border border-slate-200 shrink-0"
                   />
                   <div className="min-w-0">
                     <Link
@@ -114,7 +118,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
                       addToCart(item);
                       onClose();
                     }}
-                    className="px-3 py-1.5 bg-sumaq-600 hover:bg-sumaq-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-xs"
+                    className="px-3 py-1.5 bg-sumaq-600 hover:bg-sumaq-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-xs cursor-pointer"
                   >
                     <ShoppingBag className="w-3.5 h-3.5" />
                     Añadir

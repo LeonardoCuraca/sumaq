@@ -1,5 +1,7 @@
 import React from 'react';
+import { redirect } from 'next/navigation';
 import { getAllProducts } from '@/lib/db';
+import { availableStock } from '@/lib/products-data';
 import { ProductCard } from '@/components/product/ProductCard';
 
 export const revalidate = 3600;
@@ -12,7 +14,12 @@ export const metadata = {
 
 export default async function LineaBarberPage() {
   const products = await getAllProducts();
-  const barberProducts = products.filter((p) => p.category === 'barber');
+  const barberProducts = products.filter((p) => p.category === 'barber' && availableStock(p) > 0);
+
+  // Cuando no hay stock en la línea Barber, la línea desaparece y redirige al catálogo disponible
+  if (barberProducts.length === 0) {
+    redirect('/linea-hair');
+  }
 
   return (
     <div className="py-12 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

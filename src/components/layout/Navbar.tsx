@@ -1,30 +1,54 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { Search, Heart, ShoppingBag, Menu, X, User, ShieldCheck } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { SITE, whatsappUrl } from '@/lib/site';
 import { SearchModal } from '../search/SearchModal';
 import { useSession, signOut } from 'next-auth/react';
+import { Product, availableStock } from '@/lib/products-data';
 
-export function Navbar() {
+interface NavbarProps {
+  initialHasHairStock?: boolean;
+  initialHasBarberStock?: boolean;
+}
+
+export function Navbar({
+  initialHasHairStock = true,
+  initialHasBarberStock = false,
+}: NavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [hasHairStock, setHasHairStock] = useState(initialHasHairStock);
+  const [hasBarberStock, setHasBarberStock] = useState(initialHasBarberStock);
   const pathname = usePathname();
   const { totalItems, wishlist } = useCart();
   const { data: session } = useSession();
 
+  useEffect(() => {
+    fetch('/api/products')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: Product[] | null) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setHasHairStock(data.some((p) => p.category === 'hair' && availableStock(p) > 0));
+          setHasBarberStock(data.some((p) => p.category === 'barber' && availableStock(p) > 0));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const navLinks = [
-    { name: 'Inicio', href: '/' },
-    { name: 'Línea Hair', href: '/linea-hair', badge: 'bg-sumaq-500' },
-    { name: 'Línea Barber', href: '/linea-barber', badge: 'bg-amber-500' },
-    { name: 'Club Salones', href: '/trabaja-con-nosotros', highlight: true },
-    { name: 'Seguimiento', href: '/seguimiento' },
-    { name: 'Nosotros', href: '/nosotros' },
-    { name: 'Contacto', href: '/contactanos' },
-  ];
+    { name: 'Inicio', href: '/', visible: true },
+    { name: 'Línea Hair', href: '/linea-hair', badge: 'bg-sumaq-500', visible: hasHairStock },
+    { name: 'Línea Barber', href: '/linea-barber', badge: 'bg-amber-500', visible: hasBarberStock },
+    { name: 'Club Salones', href: '/trabaja-con-nosotros', highlight: true, visible: true },
+    { name: 'Seguimiento', href: '/seguimiento', visible: true },
+    { name: 'Nosotros', href: '/nosotros', visible: true },
+    { name: 'Contacto', href: '/contactanos', visible: true },
+  ].filter((link) => link.visible);
 
   return (
     <>
@@ -35,7 +59,7 @@ export function Navbar() {
             <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-sumaq-600 text-white uppercase tracking-wider">
               PRO SALÓN
             </span>
-            <span>Precios mayoristas y atención directa para salones de belleza y barberías</span>
+            <span>Precios mayoristas y atención directa para salones de belleza y estilistas</span>
           </div>
           <div className="flex items-center gap-4 text-slate-400 text-xs">
             <Link
@@ -69,19 +93,16 @@ export function Navbar() {
       {/* Main Sticky Navbar */}
       <header className="sticky top-0 z-40 bg-white/95 glass-header border-b border-slate-200/90 shadow-xs transition-all duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
-          {/* Brand Logo */}
-          <Link href="/" className="flex items-center gap-3 group focus:outline-none">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-sumaq-600 to-sumaq-800 flex items-center justify-center font-black text-white text-xl tracking-tighter shadow-md shadow-sumaq-600/20 group-hover:scale-105 transition-transform">
-              S
-            </div>
-            <div className="flex flex-col">
-              <span className="font-black tracking-wider text-xl sm:text-2xl text-slate-900 leading-none">
-                SUMAQ<span className="text-sumaq-600">.</span>
-              </span>
-              <span className="text-[10px] tracking-[0.25em] font-bold text-slate-500 group-hover:text-sumaq-600 transition-colors">
-                LIZZE BRASIL PERÚ
-              </span>
-            </div>
+          {/* Official SUMAQ Brand Logo */}
+          <Link href="/" className="flex items-center gap-3 group focus:outline-none shrink-0">
+            <Image
+              src="/logo-sumaq.png"
+              alt="SUMAQ Importaciones - Distribuidor Oficial Lizze Brasil Perú"
+              width={160}
+              height={71}
+              priority
+              className="h-11 sm:h-12 w-auto object-contain group-hover:scale-105 transition-transform"
+            />
           </Link>
 
           {/* Desktop Nav Links */}

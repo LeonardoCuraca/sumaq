@@ -1,16 +1,21 @@
-// Carga el catálogo inicial si la tabla products está vacía. Uso: npm run db:seed
-// Requiere Node 22+ (importa el .ts directamente con type stripping).
+// Carga o sincroniza el catálogo inicial en la tabla products.
+// Uso: npm run db:seed (o `node scripts/seed-products.mjs --sync` para actualizar nombres, fotos y stock)
 import { neon } from '@neondatabase/serverless';
 import { loadEnv, getDatabaseUrl } from './env.mjs';
 import { INITIAL_PRODUCTS } from '../src/lib/products-data.ts';
 
 loadEnv();
 const sql = neon(getDatabaseUrl());
+const syncMode = process.argv.includes('--sync');
 
 const [{ count }] = await sql`SELECT count(*)::int AS count FROM products`;
-if (count > 0) {
-  console.log(`products ya tiene ${count} filas. Nada que hacer.`);
+if (count > 0 && !syncMode) {
+  console.log(`products ya tiene ${count} filas. Usa --sync para sincronizar catálogo.`);
   process.exit(0);
+}
+
+if (syncMode) {
+  await sql`DELETE FROM products WHERE slug = 'prueba_a'`;
 }
 
 for (const p of INITIAL_PRODUCTS) {
@@ -22,6 +27,23 @@ for (const p of INITIAL_PRODUCTS) {
       ${JSON.stringify(p.voltage)}, ${JSON.stringify(p.options || [])}, ${JSON.stringify(p.prices)},
       ${JSON.stringify(p.images)}, ${JSON.stringify(p.specs)}, ${p.shortDesc}, ${p.longDesc}, ${p.isFeatured || false},
       ${stock}, 0, ${p.lowStockThreshold ?? 3}, ${sku}, ${p.trackInventory ?? true})
-    ON CONFLICT (slug) DO NOTHING`;
+    ON CONFLICT (id) DO UPDATE SET
+      slug = EXCLUDED.slug,
+      category = EXCLUDED.category,
+      name = EXCLUDED.name,
+      badge = EXCLUDED.badge,
+      punchline = EXCLUDED.punchline,
+      temp = EXCLUDED.temp,
+      voltage = EXCLUDED.voltage,
+      options = EXCLUDED.options,
+      prices = EXCLUDED.prices,
+      images = EXCLUDED.images,
+      specs = EXCLUDED.specs,
+      short_desc = EXCLUDED.short_desc,
+      long_desc = EXCLUDED.long_desc,
+      is_featured = EXCLUDED.is_featured,
+      stock = EXCLUDED.stock,
+      sku = EXCLUDED.sku,
+      updated_at = NOW()`;
 }
-console.log(`Insertados ${INITIAL_PRODUCTS.length} productos.`);
+console.log(`Sincronizados ${INITIAL_PRODUCTS.length} productos exitosamente.`);

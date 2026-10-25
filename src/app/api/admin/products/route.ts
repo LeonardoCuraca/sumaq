@@ -8,9 +8,11 @@ import { deleteBlobImages } from '@/lib/blob';
 import type { Product } from '@/lib/products-data';
 
 function revalidateCatalog(slug?: string) {
+  revalidatePath('/', 'layout');
   revalidatePath('/');
   revalidatePath('/linea-hair');
   revalidatePath('/linea-barber');
+  revalidatePath('/api/products');
   if (slug) revalidatePath(`/producto/${slug}`);
 }
 

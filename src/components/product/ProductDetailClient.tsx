@@ -57,7 +57,7 @@ export function ProductDetailClient({ product }: { product: Product }) {
               fill
               priority
               sizes="(max-width: 1024px) 100vw, 50vw"
-              className="object-cover transition-all duration-300"
+              className="object-contain p-6 transition-all duration-300"
             />
             {product.badge && (
               <span className="absolute top-4 left-4 z-10 text-xs font-bold px-3 py-1 rounded-full bg-sumaq-600 text-white shadow-md">
@@ -72,8 +72,10 @@ export function ProductDetailClient({ product }: { product: Product }) {
                 <button
                   key={idx}
                   onClick={() => setSelectedImg(img)}
-                  className={`relative w-20 h-20 rounded-xl overflow-hidden border transition-all ${
-                    selectedImg === img ? 'border-sumaq-500 ring-2 ring-sumaq-500/20 scale-105' : 'border-slate-200 opacity-70 hover:opacity-100'
+                  className={`relative w-20 h-20 rounded-xl overflow-hidden bg-white border transition-all cursor-pointer ${
+                    selectedImg === img
+                      ? 'border-sumaq-500 ring-2 ring-sumaq-500/20 scale-105'
+                      : 'border-slate-200 opacity-70 hover:opacity-100'
                   }`}
                 >
                   <Image
@@ -81,7 +83,7 @@ export function ProductDetailClient({ product }: { product: Product }) {
                     alt={`${product.name} miniatura ${idx}`}
                     fill
                     sizes="80px"
-                    className="object-cover"
+                    className="object-contain p-1.5"
                   />
                 </button>
               ))}
@@ -139,7 +141,7 @@ export function ProductDetailClient({ product }: { product: Product }) {
                   <button
                     key={v}
                     onClick={() => setSelectedVoltage(v)}
-                    className={`px-4 py-2 rounded-xl text-xs font-bold border transition-colors ${
+                    className={`px-4 py-2 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
                       selectedVoltage === v
                         ? 'bg-sumaq-600 text-white border-sumaq-500 shadow-xs'
                         : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
@@ -156,7 +158,7 @@ export function ProductDetailClient({ product }: { product: Product }) {
           {product.options && product.options.length > 0 && (
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                Medida o Diámetro:
+                Opciones, Color o Diámetro:
               </label>
               <div className="flex flex-wrap gap-2">
                 {product.options.map((opt, i) => (
@@ -210,7 +212,7 @@ export function ProductDetailClient({ product }: { product: Product }) {
             </a>
             <button
               onClick={() => toggleWishlist(product.slug)}
-              className="p-3.5 rounded-xl bg-white hover:bg-slate-100 text-slate-600 hover:text-sumaq-600 border border-slate-200 shadow-2xs"
+              className="p-3.5 rounded-xl bg-white hover:bg-slate-100 text-slate-600 hover:text-sumaq-600 border border-slate-200 shadow-2xs cursor-pointer"
               title={isFav ? 'Quitar de favoritos' : 'Guardar en favoritos'}
             >
               <Heart className={`w-5 h-5 ${isFav ? 'text-sumaq-600 fill-sumaq-600' : ''}`} />

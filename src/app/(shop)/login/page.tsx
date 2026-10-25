@@ -5,6 +5,7 @@ import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Lock, User, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -42,8 +43,14 @@ export default function LoginPage() {
     <div className="py-16 max-w-md mx-auto px-4 w-full">
       <div className="bg-white border border-slate-200/90 rounded-3xl p-8 shadow-xl">
         <div className="text-center mb-6">
-          <div className="w-12 h-12 rounded-2xl bg-sumaq-50 text-sumaq-600 flex items-center justify-center mx-auto mb-3 border border-sumaq-100">
-            <Lock className="w-6 h-6" />
+          <div className="flex justify-center mb-4">
+            <Image
+              src="/logo-sumaq.png"
+              alt="SUMAQ Importaciones"
+              width={150}
+              height={67}
+              className="h-11 w-auto object-contain"
+            />
           </div>
           <h1 className="text-2xl font-bold text-slate-900">Acceso Salones & Aliados</h1>
           <p className="text-xs text-slate-500 mt-1">

@@ -42,9 +42,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Producto no encontrado' }, { status: 404 });
     }
 
+    revalidatePath('/', 'layout');
     revalidatePath('/');
     revalidatePath('/linea-hair');
     revalidatePath('/linea-barber');
+    revalidatePath('/api/products');
 
     return NextResponse.json({
       success: true,

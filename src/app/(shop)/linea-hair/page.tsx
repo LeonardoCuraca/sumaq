@@ -1,18 +1,19 @@
 import React from 'react';
 import { getAllProducts } from '@/lib/db';
+import { availableStock } from '@/lib/products-data';
 import { ProductCard } from '@/components/product/ProductCard';
 
 export const revalidate = 3600;
 
 export const metadata = {
-  title: 'Línea Hair Lizze Brasil | Planchas de Titanio, Secadores y Fototerapia | SUMAQ',
+  title: 'Línea Hair Lizze Brasil | Planchas de Titanio, Secadoras y Fototerapia | SUMAQ',
   description:
-    'Catálogo oficial de herramientas térmicas Lizze Brasil para peluquerías y salones en Perú. Planchas de titanio hasta 250°C, secadores y fotón capilar.',
+    'Catálogo oficial de herramientas térmicas Lizze Brasil para peluquerías y salones en Perú. Planchas de titanio hasta 252°C, secadoras y Photon Lizze.',
 };
 
 export default async function LineaHairPage() {
   const products = await getAllProducts();
-  const hairProducts = products.filter((p) => p.category === 'hair');
+  const hairProducts = products.filter((p) => p.category === 'hair' && availableStock(p) > 0);
 
   return (
     <div className="py-12 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

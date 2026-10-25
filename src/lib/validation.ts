@@ -18,9 +18,18 @@ export function slugify(input: string): string {
 const imageUrl = z
   .string()
   .trim()
-  .url()
   .max(500)
-  .refine((u) => u.startsWith('https://'), 'Las imágenes deben usar https');
+  .refine(
+    (u) => {
+      if (u.startsWith('/') && !u.startsWith('//')) return true;
+      try {
+        return new URL(u).protocol === 'https:';
+      } catch {
+        return false;
+      }
+    },
+    'Las imágenes deben usar https:// o una ruta local (/products/...)'
+  );
 
 export const productInputSchema = z.object({
   id: text(100).optional(),

@@ -29,7 +29,7 @@ export function ProductCard({ product }: ProductCardProps) {
         </span>
         <button
           onClick={() => toggleWishlist(product.slug)}
-          className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-sumaq-600 transition-colors"
+          className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-sumaq-600 transition-colors cursor-pointer"
           title={isFav ? 'Quitar de favoritos' : 'Guardar en favoritos'}
         >
           <Heart
@@ -43,14 +43,16 @@ export function ProductCard({ product }: ProductCardProps) {
       {/* Image Container */}
       <Link
         href={`/producto/${product.slug}`}
-        className="block relative aspect-square rounded-xl overflow-hidden bg-slate-100 mb-4 group-hover:scale-[1.02] transition-transform"
+        className="block relative aspect-square rounded-xl overflow-hidden bg-white border border-slate-100 mb-4 group-hover:scale-[1.02] transition-transform"
       >
         <Image
           src={product.images[0]}
           alt={product.name}
           fill
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-          className={`object-cover group-hover:opacity-95 transition-opacity ${isOutOfStock ? 'grayscale opacity-60' : ''}`}
+          className={`object-contain p-3 group-hover:opacity-95 transition-opacity ${
+            isOutOfStock ? 'grayscale opacity-60' : ''
+          }`}
         />
         {product.temp !== 'N/A' && (
           <span className="absolute bottom-2 left-2 z-10 text-[10px] font-bold px-2 py-0.5 rounded bg-slate-900/85 backdrop-blur-sm text-amber-300 border border-slate-700">

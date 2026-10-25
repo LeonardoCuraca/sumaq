@@ -1,28 +1,38 @@
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { whatsappUrl } from '@/lib/site';
 import { ShieldCheck, MapPin, Mail, MessageCircle } from 'lucide-react';
 
-export function Footer() {
+interface FooterProps {
+  hasHairStock?: boolean;
+  hasBarberStock?: boolean;
+}
+
+export function Footer({
+  hasHairStock = true,
+  hasBarberStock = false,
+}: FooterProps) {
   return (
     <footer className="bg-slate-100/80 border-t border-slate-200 text-slate-600 text-sm mt-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10">
           {/* Col 1: Brand & Bio */}
           <div className="lg:col-span-2 space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-sumaq-600 flex items-center justify-center font-black text-white text-lg shadow-sm">
-                S
-              </div>
-              <span className="font-black tracking-wider text-2xl text-slate-900">
-                SUMAQ<span className="text-sumaq-600">.</span>
-              </span>
-            </div>
+            <Link href="/" className="inline-block">
+              <Image
+                src="/logo-sumaq.png"
+                alt="SUMAQ Importaciones - Distribuidor Oficial Lizze Brasil Perú"
+                width={150}
+                height={67}
+                className="h-11 w-auto object-contain"
+              />
+            </Link>
             <p className="text-xs text-slate-600 leading-relaxed max-w-sm">
               Importador N°1 en el Perú de la prestigiosa marca{' '}
               <strong className="text-slate-900 font-bold">LIZZE BRASIL</strong>. Especializados en
-              herramientas térmicas profesionales de titanio, fototerapia capilar y barbería de alto
-              rendimiento para los mejores salones del país.
+              herramientas térmicas profesionales de titanio, secadoras de alto torque y fototerapia
+              capilar para los mejores salones del país.
             </p>
             <div className="pt-2 flex flex-wrap gap-2">
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-white border border-slate-200 text-slate-700 shadow-2xs">
@@ -39,36 +49,49 @@ export function Footer() {
           <div>
             <h4 className="text-xs font-bold tracking-widest uppercase text-slate-900 mb-4">Catálogo</h4>
             <ul className="space-y-2.5 text-xs">
-              <li>
-                <Link href="/linea-hair" className="hover:text-sumaq-600 transition-colors">
-                  Planchas Extreme & Supreme
-                </Link>
-              </li>
-              <li>
-                <Link href="/linea-hair" className="hover:text-sumaq-600 transition-colors">
-                  Secadores Turbo 2600W
-                </Link>
-              </li>
-              <li>
-                <Link href="/linea-hair" className="hover:text-sumaq-600 transition-colors">
-                  Rizadores & Fotón Lizze
-                </Link>
-              </li>
-              <li>
-                <Link href="/linea-barber" className="hover:text-amber-600 transition-colors">
-                  Máquinas Clipper Magnéticas
-                </Link>
-              </li>
-              <li>
-                <Link href="/linea-barber" className="hover:text-amber-600 transition-colors">
-                  Trimmer DLC & Shaver 8000 RPM
-                </Link>
-              </li>
-              <li>
-                <Link href="/linea-hair" className="hover:text-sumaq-600 transition-colors">
-                  Cepillos Cerda de Jabalí
-                </Link>
-              </li>
+              {hasHairStock && (
+                <>
+                  <li>
+                    <Link href="/linea-hair" className="hover:text-sumaq-600 transition-colors">
+                      Planchas Lizze Extreme & Supreme
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/linea-hair" className="hover:text-sumaq-600 transition-colors">
+                      Planchas Fusion, Slim & Mini
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/linea-hair" className="hover:text-sumaq-600 transition-colors">
+                      Secadoras Hipersonic, Supreme & Extreme
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/linea-hair" className="hover:text-sumaq-600 transition-colors">
+                      Tenaza Lizze & Photon Lizze
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/linea-hair" className="hover:text-sumaq-600 transition-colors">
+                      Juego de Cepillos Cerda Jabalí
+                    </Link>
+                  </li>
+                </>
+              )}
+              {hasBarberStock && (
+                <>
+                  <li>
+                    <Link href="/linea-barber" className="hover:text-amber-600 transition-colors">
+                      Máquinas Clipper Magnéticas
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/linea-barber" className="hover:text-amber-600 transition-colors">
+                      Trimmer DLC & Shaver 8000 RPM
+                    </Link>
+                  </li>
+                </>
+              )}
             </ul>
           </div>
 
