@@ -11,7 +11,11 @@ import { clientIp, getSessionUser } from '@/lib/guards';
 import { QuoteError, buildQuote, type Role } from '@/lib/pricing';
 import { formatZodError, orderSchema } from '@/lib/validation';
 import { SITE, whatsappUrl } from '@/lib/site';
-import { createMercadoPagoPreference, getMpConfigStatus } from '@/lib/mercadopago';
+import {
+  createMercadoPagoPreference,
+  ensureMpConfigLoaded,
+  getMpConfigStatus,
+} from '@/lib/mercadopago';
 
 export async function POST(request: Request) {
   try {
@@ -105,6 +109,7 @@ export async function POST(request: Request) {
     const waUrl = whatsappUrl(text);
 
     // Si el cliente eligió pagar con Mercado Pago y las credenciales están activas, creamos la Preferencia
+    await ensureMpConfigLoaded();
     const mpStatus = getMpConfigStatus();
     if (gateway === 'mercadopago' && mpStatus.configured) {
       try {
@@ -135,8 +140,6 @@ export async function POST(request: Request) {
         });
       } catch (mpErr) {
         console.error('[orders POST] Error creando preferencia de Mercado Pago:', mpErr);
-        // Si Mercado Pago presenta intermitencia o credenciales inválidas, la orden ya quedó registrada con stock reservado
-        // y retornamos fallback limpio para que el usuario pueda reintentar o finalizar en la vista de confirmación.
         return NextResponse.json({
           success: true,
           orderId,

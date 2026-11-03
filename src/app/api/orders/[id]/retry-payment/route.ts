@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server';
 import { getOrderById, recordOrderEvent, saveOrderMpPreference } from '@/lib/db';
 import { badRequest, notFound, serverError } from '@/lib/api';
-import { createMercadoPagoPreference, getMpConfigStatus } from '@/lib/mercadopago';
+import {
+  createMercadoPagoPreference,
+  ensureMpConfigLoaded,
+  getMpConfigStatus,
+} from '@/lib/mercadopago';
 
 /**
  * Genera una nueva Preferencia de Mercado Pago para una orden existente cuyo pago falló o quedó pendiente.
@@ -27,6 +31,7 @@ export async function POST(
       return badRequest('Esta orden fue cancelada. Por favor genera un nuevo pedido.');
     }
 
+    await ensureMpConfigLoaded();
     const mpConfig = getMpConfigStatus();
     if (!mpConfig.configured) {
       return badRequest('La pasarela de Mercado Pago no está configurada en este entorno.');

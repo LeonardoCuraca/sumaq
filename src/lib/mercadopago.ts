@@ -1,12 +1,56 @@
 import crypto from 'node:crypto';
 import { MercadoPagoConfig, Preference, Payment } from 'mercadopago';
-import type { OrderItem } from './db';
+import { getDb, type OrderItem } from './db';
 
 export interface MpConfigStatus {
   configured: boolean;
   hasWebhookSecret: boolean;
   mode: 'production' | 'sandbox' | 'unconfigured';
   publicKey: string | null;
+}
+
+let dbConfigLoadedAt = 0;
+
+/**
+ * Si las variables de entorno de Mercado Pago no fueron inyectadas en el runtime (ej. Vercel sin env vars manuales),
+ * hidrata automáticamente las credenciales desde la tabla segura `gateway_config` en Neon PostgreSQL.
+ */
+export async function ensureMpConfigLoaded(): Promise<void> {
+  if (getMpAccessToken()) return;
+  if (Date.now() - dbConfigLoadedAt < 15_000) return;
+
+  const sql = getDb();
+  if (!sql) return;
+
+  try {
+    const rows = await sql`
+      SELECT access_token AS "accessToken", public_key AS "publicKey",
+             webhook_secret AS "webhookSecret", site_url AS "siteUrl"
+      FROM gateway_config
+      WHERE provider = 'mercadopago'
+      LIMIT 1`;
+    dbConfigLoadedAt = Date.now();
+    if (rows.length > 0) {
+      const cfg = rows[0] as {
+        accessToken?: string | null;
+        publicKey?: string | null;
+        webhookSecret?: string | null;
+        siteUrl?: string | null;
+      };
+      if (cfg.accessToken) process.env.MERCADOPAGO_ACCESS_TOKEN = cfg.accessToken.trim();
+      if (cfg.publicKey && !process.env.MERCADOPAGO_PUBLIC_KEY) {
+        process.env.MERCADOPAGO_PUBLIC_KEY = cfg.publicKey.trim();
+      }
+      if (cfg.webhookSecret && !process.env.MERCADOPAGO_WEBHOOK_SECRET) {
+        process.env.MERCADOPAGO_WEBHOOK_SECRET = cfg.webhookSecret.trim();
+      }
+      if (cfg.siteUrl && !process.env.NEXT_PUBLIC_SITE_URL) {
+        process.env.NEXT_PUBLIC_SITE_URL = cfg.siteUrl.trim();
+      }
+    }
+  } catch {
+    // Si la tabla gateway_config aún no existe en algún entorno local de test, continuar silenciosamente
+  }
 }
 
 export function getMpAccessToken(): string | null {
@@ -46,7 +90,8 @@ export function getMpConfigStatus(): MpConfigStatus {
   };
 }
 
-function getMpClient(): MercadoPagoConfig {
+async function getMpClient(): Promise<MercadoPagoConfig> {
+  await ensureMpConfigLoaded();
   const accessToken = getMpAccessToken();
   if (!accessToken) {
     throw new Error('MP_ACCESS_TOKEN / MERCADOPAGO_ACCESS_TOKEN no está configurado en las variables de entorno.');
@@ -84,7 +129,7 @@ export interface CreatedPreferenceResult {
 export async function createMercadoPagoPreference(
   input: CreatePreferenceInput
 ): Promise<CreatedPreferenceResult> {
-  const client = getMpClient();
+  const client = await getMpClient();
   const preference = new Preference(client);
   const baseUrl = (
     input.baseUrl ||
@@ -203,7 +248,7 @@ export interface VerifiedMpPayment {
  * Nunca se confía ciegamente en el body del webhook sin verificar el recurso en MP.
  */
 export async function fetchMercadoPagoPayment(paymentId: string | number): Promise<VerifiedMpPayment> {
-  const client = getMpClient();
+  const client = await getMpClient();
   const paymentClient = new Payment(client);
   const p = await paymentClient.get({ id: String(paymentId) });
 
@@ -242,7 +287,7 @@ export async function fetchMercadoPagoPayment(paymentId: string | number): Promi
  * Útil para reconciliación activa desde el panel de administración o cuando el cliente vuelve al sitio.
  */
 export async function searchMercadoPagoPaymentsByOrder(orderId: number): Promise<VerifiedMpPayment[]> {
-  const client = getMpClient();
+  const client = await getMpClient();
   const paymentClient = new Payment(client);
   const res = await paymentClient.search({
     options: {

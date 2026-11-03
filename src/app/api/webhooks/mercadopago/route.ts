@@ -7,6 +7,7 @@ import {
   updateWebhookEventStatus,
 } from '@/lib/db';
 import {
+  ensureMpConfigLoaded,
   fetchMercadoPagoPayment,
   getMpConfigStatus,
   getMpWebhookSecret,
@@ -15,17 +16,13 @@ import {
 
 /**
  * Webhook receptor oficial de Mercado Pago (IPN / Webhooks v2).
- * Cumple estándares de la industria:
- * 1. Validación criptográfica HMAC-SHA256 de `x-signature` (cuando MP_WEBHOOK_SECRET / MERCADOPAGO_WEBHOOK_SECRET está definido).
- * 2. Registro en base de datos (`webhook_events`) para auditoría e idempotencia.
- * 3. Verificación Zero-Trust consultando directamente la API de Mercado Pago (`GET /v1/payments/{id}`).
- * 4. Validación de integridad del monto cobrado (`amount >= order.total`) y moneda (`PEN`).
- * 5. Confirmación atómica de stock y actualización de estado logístico/financiero.
  */
 export async function POST(request: Request) {
   let webhookLogId: number | null = null;
 
   try {
+    await ensureMpConfigLoaded();
+
     const url = new URL(request.url);
     const xSignature = request.headers.get('x-signature');
     const xRequestId = request.headers.get('x-request-id');

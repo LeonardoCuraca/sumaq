@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getOrderById, recordOrderPayment } from '@/lib/db';
 import { badRequest, notFound, serverError } from '@/lib/api';
 import {
+  ensureMpConfigLoaded,
   fetchMercadoPagoPayment,
   getMpConfigStatus,
   searchMercadoPagoPaymentsByOrder,
@@ -30,6 +31,7 @@ export async function GET(
     let order = await getOrderById(orderId);
     if (!order) return notFound('Orden no encontrada');
 
+    await ensureMpConfigLoaded();
     const mpConfig = getMpConfigStatus();
 
     // Si recibimos un payment_id explícito de MP o se solicitó sincronización activa
