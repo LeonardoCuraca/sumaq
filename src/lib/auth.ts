@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import { z } from 'zod';
@@ -14,8 +15,21 @@ const credentialsSchema = z.object({
 const DUMMY_HASH =
   'scrypt$00000000000000000000000000000000$' + '00'.repeat(64);
 
+function resolveAuthSecret(): string | undefined {
+  if (process.env.AUTH_SECRET) return process.env.AUTH_SECRET;
+  if (process.env.NEXTAUTH_SECRET) return process.env.NEXTAUTH_SECRET;
+  if (process.env.DATABASE_URL) {
+    return crypto
+      .createHmac('sha256', 'sumaq-auth-jwt-v1')
+      .update(process.env.DATABASE_URL)
+      .digest('hex');
+  }
+  return undefined;
+}
+
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  // AUTH_SECRET es obligatoria: Auth.js falla si no está definida (sin valor por defecto en código).
+  secret: resolveAuthSecret(),
+  trustHost: true,
   session: { strategy: 'jwt', maxAge: 60 * 60 * 8 },
   providers: [
     Credentials({
